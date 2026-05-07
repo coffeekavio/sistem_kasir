@@ -39,22 +39,49 @@ class SidebarComponent extends StatelessWidget {
             ListTile(
               leading: Icon(Icons.coffee_maker, color: Colors.white),
               title: Text("Menu", style: TextStyle(color: Colors.white)),
-              onTap: () {},
+              onTap: () {
+                Navigator.pushNamed(context, '/menu');
+              },
             ),
             ListTile(
-              leading: Icon(Icons.add_box, color: Colors.white),
-              title: Text("Tambah Menu", style: TextStyle(color: Colors.white)),
-              onTap: () {},
+              leading: Icon(Icons.list, color: Colors.white),
+              title: Text(
+                "Manajemen Menu",
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pushNamed(context, '/index_menu');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.category, color: Colors.white),
+              title: Text(
+                "Manajemen Kategori",
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pushNamed(context, '/index_category');
+              },
             ),
             ListTile(
               leading: Icon(Icons.person, color: Colors.white),
-              title: Text("Member", style: TextStyle(color: Colors.white)),
-              onTap: () {},
+              title: Text(
+                "Manajemen Member",
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pushNamed(context, '/index_member');
+              },
             ),
             ListTile(
               leading: Icon(Icons.receipt_long, color: Colors.white),
-              title: Text("Transaksi", style: TextStyle(color: Colors.white)),
-              onTap: () {},
+              title: Text(
+                "History Transaksi",
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pushNamed(context, '/transaksi');
+              },
             ),
             Spacer(),
             ListTile(
