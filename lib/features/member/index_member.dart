@@ -65,6 +65,15 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
     _scaffoldKey.currentState?.openDrawer();
   }
 
+  void _openMember() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Anda sudah di halaman Member'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
   void _addMember() {
     _nameController.clear();
     _phoneController.clear();
@@ -72,7 +81,39 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Tambah Member Baru'),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Color(0xFFC67C4E).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.person_add,
+                  color: Color(0xFFC67C4E),
+                  size: 18,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Tambah Member Baru',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3E2723),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          titlePadding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+          contentPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -84,10 +125,29 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                     decoration: InputDecoration(
                       labelText: "Nama Member",
                       hintText: "Masukkan nama lengkap",
+                      labelStyle: TextStyle(
+                        color: Color(0xFF3E2723),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                      hintStyle: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                          width: 1,
+                        ),
                       ),
-                      prefixIcon: Icon(Icons.person, color: Color(0xFFC67C4E)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
@@ -95,8 +155,20 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                           width: 2,
                         ),
                       ),
+                      prefixIcon: Icon(
+                        Icons.person,
+                        color: Color(0xFFC67C4E),
+                        size: 18,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     autofocus: true,
+                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
                   ),
                   SizedBox(height: 12),
                   TextField(
@@ -105,10 +177,29 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                     decoration: InputDecoration(
                       labelText: "Nomor HP",
                       hintText: "08xxxxxxxxxx",
+                      labelStyle: TextStyle(
+                        color: Color(0xFF3E2723),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                      hintStyle: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                          width: 1,
+                        ),
                       ),
-                      prefixIcon: Icon(Icons.phone, color: Color(0xFFC67C4E)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
@@ -116,7 +207,19 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                           width: 2,
                         ),
                       ),
+                      prefixIcon: Icon(
+                        Icons.phone,
+                        color: Color(0xFFC67C4E),
+                        size: 18,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
+                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
                   ),
                 ],
               ),
@@ -125,11 +228,26 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              child: Text(
+                'Batal',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFC67C4E),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
               ),
               onPressed: () {
                 if (_nameController.text.isNotEmpty &&
@@ -159,13 +277,22 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                     SnackBar(
                       content: Text('Nama dan nomor HP harus diisi'),
                       backgroundColor: Colors.red,
+                      duration: Duration(seconds: 2),
                     ),
                   );
                 }
               },
-              child: Text('Tambah', style: TextStyle(color: Colors.white)),
+              child: Text(
+                'Tambah',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
+          actionsPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
         );
       },
     );
@@ -178,7 +305,35 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Edit Member'),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Color(0xFFC67C4E).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(Icons.edit, color: Color(0xFFC67C4E), size: 18),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Edit Member',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3E2723),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          titlePadding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+          contentPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -189,10 +344,25 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: "Nama Member",
+                      labelStyle: TextStyle(
+                        color: Color(0xFF3E2723),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                          width: 1,
+                        ),
                       ),
-                      prefixIcon: Icon(Icons.person, color: Color(0xFFC67C4E)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
@@ -200,7 +370,19 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                           width: 2,
                         ),
                       ),
+                      prefixIcon: Icon(
+                        Icons.person,
+                        color: Color(0xFFC67C4E),
+                        size: 18,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
+                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
                   ),
                   SizedBox(height: 12),
                   TextField(
@@ -208,10 +390,25 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
                       labelText: "Nomor HP",
+                      labelStyle: TextStyle(
+                        color: Color(0xFF3E2723),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                          width: 1,
+                        ),
                       ),
-                      prefixIcon: Icon(Icons.phone, color: Color(0xFFC67C4E)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
@@ -219,7 +416,19 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                           width: 2,
                         ),
                       ),
+                      prefixIcon: Icon(
+                        Icons.phone,
+                        color: Color(0xFFC67C4E),
+                        size: 18,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
+                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
                   ),
                 ],
               ),
@@ -228,11 +437,26 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              child: Text(
+                'Batal',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFC67C4E),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
               ),
               onPressed: () {
                 if (_nameController.text.isNotEmpty &&
@@ -259,13 +483,22 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                     SnackBar(
                       content: Text('Nama dan nomor HP harus diisi'),
                       backgroundColor: Colors.red,
+                      duration: Duration(seconds: 2),
                     ),
                   );
                 }
               },
-              child: Text('Simpan', style: TextStyle(color: Colors.white)),
+              child: Text(
+                'Simpan',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
+          actionsPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
         );
       },
     );
@@ -276,14 +509,74 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Hapus Member'),
-          content: Text('Yakin ingin menghapus member "${member["name"]}"?'),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.delete_outline,
+                  color: Colors.red[600],
+                  size: 18,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Hapus Member',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3E2723),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          titlePadding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+          contentPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+          content: Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              'Yakin ingin menghapus member "${member["name"]}"?\n\nTindakan ini tidak dapat dibatalkan.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[700],
+                height: 1.4,
+              ),
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              child: Text(
+                'Batal',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
               onPressed: () {
                 Navigator.pop(context);
                 setState(() {
@@ -293,12 +586,21 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                   SnackBar(
                     content: Text('Member ${member["name"]} berhasil dihapus'),
                     backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
                   ),
                 );
               },
-              child: Text('Hapus', style: TextStyle(color: Colors.red)),
+              child: Text(
+                'Hapus',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
+          actionsPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
         );
       },
     );
@@ -328,7 +630,10 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
           // Navbar
           SizedBox(
             height: 70,
-            child: NavbarComponent(onMenuPressed: _openSidebar),
+            child: NavbarComponent(
+              onMenuPressed: _openSidebar,
+              onMemberPressed: _openMember,
+            ),
           ),
           // Content
           Expanded(
@@ -336,154 +641,108 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
               color: Color.fromARGB(255, 252, 250, 245),
               child: Column(
                 children: [
-                  // Header dengan Summary Card
+                  // Header dengan Search & Add Button
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(10),
                     color: Colors.white,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          "Manajemen Member",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF3E2723),
-                          ),
-                        ),
-                        SizedBox(height: 14),
-                        // Summary Card dengan Gradient
-                        Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFFC67C4E), Color(0xFFD4845C)],
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Manajemen Member",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF3E2723),
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0xFFC67C4E).withOpacity(0.25),
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
+                            SizedBox(height: 2),
+                            Text(
+                              "Total member: ${_filteredMember.length}",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.people,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(width: 24),
+                        Expanded(
+                          child: SizedBox(
+                            height: 36,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Color.fromARGB(255, 248, 248, 248),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 3,
+                                    offset: Offset(0, 2),
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                               ),
-                              SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Total Member",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                              child: TextField(
+                                controller: _searchController,
+                                textAlignVertical: TextAlignVertical.center,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _searchText = value;
+                                  });
+                                },
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: "Cari Member",
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 11,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 2,
+                                  ),
+                                  suffixIcon: Container(
+                                    margin: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFC67C4E),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      "${_filteredMember.length} Member",
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                                    child: Icon(
+                                      Icons.search,
+                                      color: Colors.white,
+                                      size: 16,
                                     ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  "Aktif",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Search & Add Button
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    color: Colors.white,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            setState(() {
-                              _searchText = value;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            hintText: "Cari member (nama/nomor HP)...",
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: Color(0xFFC67C4E),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: Color(0xFFC67C4E),
-                                width: 2,
+                                style: TextStyle(fontSize: 12),
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(height: 12),
+                        SizedBox(width: 8),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFFC67C4E),
                             padding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                              horizontal: 10,
+                              vertical: 6,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
                             ),
                           ),
                           onPressed: _addMember,
-                          icon: Icon(Icons.add, color: Colors.white, size: 18),
+                          icon: Icon(Icons.add, color: Colors.white, size: 16),
                           label: Text(
                             "Tambah",
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontSize: 11,
                             ),
                           ),
                         ),
@@ -500,23 +759,23 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                                 children: [
                                   Icon(
                                     Icons.people,
-                                    size: 64,
+                                    size: 48,
                                     color: Colors.grey[400],
                                   ),
-                                  SizedBox(height: 16),
+                                  SizedBox(height: 12),
                                   Text(
                                     "Tidak ada member",
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 13,
                                       color: Colors.grey[600],
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  SizedBox(height: 8),
+                                  SizedBox(height: 6),
                                   Text(
                                     "Tambahkan member pertama Anda",
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 11,
                                       color: Colors.grey[500],
                                     ),
                                   ),
@@ -524,258 +783,215 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                               ),
                             )
                             : ListView.builder(
-                              padding: EdgeInsets.all(12),
+                              padding: EdgeInsets.all(8),
                               itemCount: _filteredMember.length,
                               itemBuilder: (context, index) {
                                 final member = _filteredMember[index];
                                 return Container(
-                                  margin: EdgeInsets.only(bottom: 12),
+                                  margin: EdgeInsets.only(bottom: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: Colors.grey[200]!,
-                                      width: 1,
+                                      width: 0.5,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.06),
-                                        blurRadius: 6,
-                                        offset: Offset(0, 2),
+                                        color: Colors.black.withOpacity(0.02),
+                                        blurRadius: 2,
+                                        offset: Offset(0, 0.5),
                                       ),
                                     ],
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(14),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    child: Row(
                                       children: [
-                                        // Row 1: Avatar & Name & Actions
-                                        Row(
-                                          children: [
-                                            // Avatar Icon
-                                            Container(
-                                              width: 50,
-                                              height: 50,
-                                              decoration: BoxDecoration(
-                                                color: Color(
-                                                  0xFFC67C4E,
-                                                ).withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
+                                        // Nama Item
+                                        SizedBox(
+                                          width: 150,
+                                          child: Text(
+                                            member["name"],
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF3E2723),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        // Nomor HP
+                                        SizedBox(
+                                          width: 130,
+                                          child: Text(
+                                            member["phone"],
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: Colors.grey[600],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        // Points Badge
+                                        SizedBox(
+                                          width: 60,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[100],
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              "${member["points"]}P",
+                                              style: TextStyle(
+                                                fontSize: 8,
+                                                color: Colors.grey[700],
+                                                fontWeight: FontWeight.w600,
                                               ),
-                                              child: Icon(
-                                                Icons.person,
-                                                size: 28,
-                                                color: Color(0xFFC67C4E),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        // Diskon Badge
+                                        SizedBox(
+                                          width: 110,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green[50],
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                              border: Border.all(
+                                                color: Colors.green[200]!,
+                                                width: 0.5,
                                               ),
                                             ),
-                                            SizedBox(width: 12),
-                                            // Member Info
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    member["name"],
-                                                    style: TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Color(0xFF3E2723),
+                                            child: Text(
+                                              "Rp${member["discount"] * 1000}",
+                                              style: TextStyle(
+                                                fontSize: 8,
+                                                color: Colors.green[700],
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                        Spacer(),
+                                        // Action Buttons
+                                        SizedBox(
+                                          width: 120,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              Tooltip(
+                                                message: "Ke Transaksi",
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          '${member["name"]} ditambahkan ke transaksi',
+                                                        ),
+                                                        duration: Duration(
+                                                          seconds: 2,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  child: Container(
+                                                    padding: EdgeInsets.all(6),
+                                                    decoration: BoxDecoration(
+                                                      color: Color(0xFFC67C4E),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            6,
+                                                          ),
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.add_shopping_cart,
+                                                      size: 14,
+                                                      color: Colors.white,
                                                     ),
                                                   ),
-                                                  SizedBox(height: 3),
-                                                  Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.phone,
-                                                        size: 12,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                      SizedBox(width: 4),
-                                                      Text(
-                                                        member["phone"],
-                                                        style: TextStyle(
-                                                          fontSize: 12,
-                                                          color:
-                                                              Colors.grey[600],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
+                                                ),
                                               ),
-                                            ),
-                                            SizedBox(width: 8),
-                                            // Action Buttons
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    color: Color(
-                                                      0xFFC67C4E,
-                                                    ).withOpacity(0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: IconButton(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 6,
-                                                        ),
-                                                    icon: Icon(
+                                              SizedBox(width: 6),
+                                              Tooltip(
+                                                message: "Edit",
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    _editMember(member);
+                                                  },
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  child: Container(
+                                                    padding: EdgeInsets.all(6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blue[600],
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            6,
+                                                          ),
+                                                    ),
+                                                    child: Icon(
                                                       Icons.edit,
-                                                      size: 18,
-                                                      color: Color(0xFFC67C4E),
+                                                      size: 14,
+                                                      color: Colors.white,
                                                     ),
-                                                    onPressed: () {
-                                                      _editMember(member);
-                                                    },
-                                                    tooltip: "Edit Member",
                                                   ),
                                                 ),
-                                                SizedBox(width: 8),
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.red
-                                                        .withOpacity(0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: IconButton(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 6,
-                                                        ),
-                                                    icon: Icon(
+                                              ),
+                                              SizedBox(width: 6),
+                                              Tooltip(
+                                                message: "Hapus",
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    _deleteMember(member);
+                                                  },
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  child: Container(
+                                                    padding: EdgeInsets.all(6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.red[600],
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            6,
+                                                          ),
+                                                    ),
+                                                    child: Icon(
                                                       Icons.delete,
-                                                      size: 18,
-                                                      color: Colors.red[500],
+                                                      size: 14,
+                                                      color: Colors.white,
                                                     ),
-                                                    onPressed: () {
-                                                      _deleteMember(member);
-                                                    },
-                                                    tooltip: "Hapus Member",
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(height: 12),
-                                        // Divider
-                                        Divider(
-                                          height: 1,
-                                          color: Colors.grey[200],
-                                        ),
-                                        SizedBox(height: 12),
-                                        // Row 2: Points & Discount (Highlight)
-                                        Row(
-                                          children: [
-                                            // Points Card
-                                            Expanded(
-                                              child: Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 12,
-                                                  vertical: 10,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Color(
-                                                    0xFFC67C4E,
-                                                  ).withOpacity(0.08),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.stars,
-                                                      size: 18,
-                                                      color: Color(0xFFC67C4E),
-                                                    ),
-                                                    SizedBox(height: 4),
-                                                    Text(
-                                                      "Poin",
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 2),
-                                                    Text(
-                                                      "${member["points"]}",
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Color(
-                                                          0xFFC67C4E,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
                                               ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            // Discount Card
-                                            Expanded(
-                                              child: Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 12,
-                                                  vertical: 10,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.green
-                                                      .withOpacity(0.08),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.local_offer,
-                                                      size: 18,
-                                                      color: Colors.green,
-                                                    ),
-                                                    SizedBox(height: 4),
-                                                    Text(
-                                                      "Diskon",
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 2),
-                                                    Text(
-                                                      "${member["discount"]}%",
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.green,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),

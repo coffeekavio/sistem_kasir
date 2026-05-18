@@ -63,11 +63,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: isTablet ? 200 : 80,
                       fit: BoxFit.contain,
                     ),
-                    SizedBox(height: isTablet ? 20 : 24),
+                    SizedBox(height: isTablet ? 10 : 18),
                     // Username
                     TextField(
                       controller: _usernameController,
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.1),
@@ -92,7 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.1),
@@ -123,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Tombol Login
                     SizedBox(
                       width: double.infinity,
-                      height: isTablet ? 60 : 48,
+                      height: 48,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFC67C4E),
@@ -137,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           "Masuk",
                           style: GoogleFonts.sora(
                             color: Colors.white,
-                            fontSize: isTablet ? 24 : 16,
+                            fontSize: isTablet ? 14 : 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

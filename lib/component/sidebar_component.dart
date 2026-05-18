@@ -45,32 +45,9 @@ class SidebarComponent extends StatelessWidget {
             ),
             ListTile(
               leading: Icon(Icons.list, color: Colors.white),
-              title: Text(
-                "Manajemen Menu",
-                style: TextStyle(color: Colors.white),
-              ),
+              title: Text("Daftar Menu", style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pushNamed(context, '/index_menu');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.category, color: Colors.white),
-              title: Text(
-                "Manajemen Kategori",
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pushNamed(context, '/index_category');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.person, color: Colors.white),
-              title: Text(
-                "Manajemen Member",
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pushNamed(context, '/index_member');
               },
             ),
             ListTile(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class NavbarComponent extends StatelessWidget {
   final VoidCallback? onMenuPressed;
-  const NavbarComponent({super.key, this.onMenuPressed});
+  final VoidCallback? onMemberPressed;
+
+  const NavbarComponent({super.key, this.onMenuPressed, this.onMemberPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +28,16 @@ class NavbarComponent extends StatelessWidget {
             fit: BoxFit.contain,
           ),
           Spacer(),
-          IconButton(
-            icon: Icon(Icons.notifications_none, color: Color(0xFF3E2723)),
-            onPressed: () {},
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.people, color: Color(0xFF3E2723)),
+              onPressed: onMemberPressed,
+              tooltip: "Manajemen Member",
+            ),
           ),
           SizedBox(width: 16),
           Row(

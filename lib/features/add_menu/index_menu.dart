@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kasir/component/sidebar_component.dart';
 import 'package:kasir/component/navbar_component.dart';
+import 'package:kasir/features/member/index_member.dart';
 
 class IndexMenuScreen extends StatefulWidget {
   const IndexMenuScreen({super.key});
@@ -97,6 +98,13 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
     _scaffoldKey.currentState?.openDrawer();
   }
 
+  void _openMember() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => IndexMemberScreen()),
+    );
+  }
+
   void _editMenu(Map<String, dynamic> menu) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -164,388 +172,306 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
           // Navbar
           SizedBox(
             height: 70,
-            child: NavbarComponent(onMenuPressed: _openSidebar),
+            child: NavbarComponent(
+              onMenuPressed: _openSidebar,
+              onMemberPressed: _openMember,
+            ),
           ),
           // Content
           Expanded(
             child: Container(
               color: Color.fromARGB(255, 252, 250, 245),
-              child: Column(
+              child: Row(
                 children: [
-                  // Header dengan tombol Tambah
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    color: Colors.white,
-                    child: Row(
+                  // Menu List - Kiri
+                  Expanded(
+                    flex: 2,
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        Container(
+                          padding: EdgeInsets.all(10),
+                          color: Colors.white,
+                          child: Row(
                             children: [
-                              Text(
-                                "Manajemen Menu",
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF3E2723),
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Manajemen Menu",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF3E2723),
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    "Total menu: ${_filteredMenu.length}",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: 4),
-                              Text(
-                                "Total menu: ${_filteredMenu.length}",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 36,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Color.fromARGB(255, 248, 248, 248),
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.04),
+                                          blurRadius: 3,
+                                          offset: Offset(0, 2),
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: TextField(
+                                      controller: _searchController,
+                                      textAlignVertical:
+                                          TextAlignVertical.center,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _searchText = value;
+                                        });
+                                      },
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        hintText: "Cari Menu",
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 11,
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 2,
+                                        ),
+                                        suffixIcon: Container(
+                                          margin: EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Color(0xFFC67C4E),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.search,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ),
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Color(0xFF3E2723),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/index_category');
-                          },
-                          icon: Icon(Icons.category, color: Color(0xFF3E2723)),
-                          label: Text(
-                            "Manajemen Kategori",
-                            style: TextStyle(
-                              color: Color(0xFF3E2723),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFC67C4E),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/add_menu');
-                          },
-                          icon: Icon(Icons.add, color: Colors.white),
-                          label: Text(
-                            "Tambah Menu",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Search & Filter
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    color: Colors.white,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Search field
-                        TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            setState(() {
-                              _searchText = value;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            hintText: "Cari menu...",
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: Color(0xFFC67C4E),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: Color(0xFFC67C4E),
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        // Kategori filter
-                        SizedBox(
-                          height: 40,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _categories.length,
-                            separatorBuilder: (_, __) => SizedBox(width: 8),
-                            itemBuilder: (context, index) {
-                              final category = _categories[index];
-                              final isSelected = _selectedCategory == category;
-                              return ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      isSelected
-                                          ? Color(0xFFC67C4E)
-                                          : Colors.grey[200],
-                                  foregroundColor:
-                                      isSelected ? Colors.white : Colors.black,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  padding: EdgeInsets.symmetric(horizontal: 12),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedCategory = category;
-                                  });
-                                },
-                                child: Text(
-                                  category,
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Menu List
-                  Expanded(
-                    child:
-                        _filteredMenu.isEmpty
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.inbox,
-                                    size: 64,
-                                    color: Colors.grey[400],
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "Tidak ada menu",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    "Tambahkan menu pertama Anda",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                            : ListView.builder(
-                              padding: EdgeInsets.all(12),
-                              itemCount: _filteredMenu.length,
-                              itemBuilder: (context, index) {
-                                final menu = _filteredMenu[index];
-                                return Container(
-                                  margin: EdgeInsets.only(bottom: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: Colors.grey[200]!,
-                                      width: 1,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.04),
-                                        blurRadius: 4,
-                                        offset: Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Padding(
-                                    padding: EdgeInsets.all(12),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
+                        // Menu List
+                        Expanded(
+                          child:
+                              _filteredMenu.isEmpty
+                                  ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        // Image Placeholder
-                                        Container(
-                                          width: 80,
-                                          height: 80,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            color: Colors.grey[200],
-                                          ),
-                                          child: Icon(
-                                            Icons.image,
-                                            size: 40,
-                                            color: Colors.grey[400],
+                                        Icon(
+                                          Icons.inbox,
+                                          size: 48,
+                                          color: Colors.grey[400],
+                                        ),
+                                        SizedBox(height: 12),
+                                        Text(
+                                          "Tidak ada menu",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        SizedBox(width: 12),
-                                        // Menu Info
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                        SizedBox(height: 6),
+                                        Text(
+                                          "Tambahkan menu pertama Anda",
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  : ListView.builder(
+                                    padding: EdgeInsets.all(8),
+                                    itemCount: _filteredMenu.length,
+                                    itemBuilder: (context, index) {
+                                      final menu = _filteredMenu[index];
+                                      return Container(
+                                        margin: EdgeInsets.only(bottom: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.grey[200]!,
+                                            width: 0.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.02,
+                                              ),
+                                              blurRadius: 2,
+                                              offset: Offset(0, 0.5),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
+                                          child: Row(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.center,
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Text(
-                                                menu["name"],
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF3E2723),
+                                              // Nama Item
+                                              Expanded(
+                                                flex: 2,
+                                                child: Text(
+                                                  menu["name"],
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFF3E2723),
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              SizedBox(height: 4),
-                                              Text(
-                                                "Rp ${menu["price"].toString()}",
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Color(0xFFC67C4E),
+                                              SizedBox(width: 12),
+                                              // Harga
+                                              Expanded(
+                                                flex: 1,
+                                                child: Text(
+                                                  "Rp ${menu["price"]}",
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFFC67C4E),
+                                                  ),
+                                                  textAlign: TextAlign.center,
                                                 ),
                                               ),
-                                              SizedBox(height: 6),
+                                              SizedBox(width: 12),
+                                              // Kategori
                                               Container(
                                                 padding: EdgeInsets.symmetric(
                                                   horizontal: 8,
-                                                  vertical: 3,
+                                                  vertical: 4,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.grey[200],
+                                                  color: Colors.grey[100],
                                                   borderRadius:
                                                       BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
                                                   menu["category"],
                                                   style: TextStyle(
-                                                    fontSize: 11,
+                                                    fontSize: 9,
                                                     color: Colors.grey[700],
-                                                    fontWeight: FontWeight.w500,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                        SizedBox(width: 12),
-                                        // Status Badge
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                menu["available"]
-                                                    ? Colors.green[100]
-                                                    : Colors.red[100],
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            menu["available"]
-                                                ? "Tersedia"
-                                                : "Tidak Ada",
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color:
-                                                  menu["available"]
-                                                      ? Colors.green[700]
-                                                      : Colors.red[700],
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 12),
-                                        // Action Buttons - Perbaikan
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: Color(
-                                                  0xFFC67C4E,
-                                                ).withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: IconButton(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 6,
-                                                ),
-                                                icon: Icon(
-                                                  Icons.edit,
-                                                  size: 18,
-                                                  color: Color(0xFFC67C4E),
-                                                ),
-                                                onPressed: () {
-                                                  _editMenu(menu);
-                                                },
-                                                tooltip: "Edit Menu",
-                                              ),
-                                            ),
-                                            SizedBox(width: 8),
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: Colors.red.withOpacity(
-                                                  0.1,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: IconButton(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 6,
-                                                ),
-                                                icon: Icon(
-                                                  Icons.delete,
-                                                  size: 18,
-                                                  color: Colors.red[500],
-                                                ),
-                                                onPressed: () {
-                                                  _deleteMenu(menu);
-                                                },
-                                                tooltip: "Hapus Menu",
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                      );
+                                    },
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Search & Filter - Kanan
+                  SizedBox(width: 1, child: Container(color: Colors.grey[200])),
+                  SizedBox(
+                    width: 200,
+                    child: Container(
+                      color: Colors.white,
+                      padding: EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            "Filter",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF3E2723),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Kategori",
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          // Kategori filter - Vertical
+                          Expanded(
+                            child: ListView.separated(
+                              itemCount: _categories.length,
+                              separatorBuilder: (_, __) => SizedBox(height: 3),
+                              itemBuilder: (context, index) {
+                                final category = _categories[index];
+                                final isSelected =
+                                    _selectedCategory == category;
+                                return ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        isSelected
+                                            ? Color(0xFFC67C4E)
+                                            : Colors.grey[100],
+                                    foregroundColor:
+                                        isSelected
+                                            ? Colors.white
+                                            : Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
+                                    padding: EdgeInsets.symmetric(vertical: 5),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedCategory = category;
+                                    });
+                                  },
+                                  child: Text(
+                                    category,
+                                    style: TextStyle(fontSize: 9),
                                   ),
                                 );
                               },
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
