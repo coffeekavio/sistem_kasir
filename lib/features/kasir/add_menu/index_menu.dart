@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:kasir/component/sidebar_component.dart';
-import 'package:kasir/component/navbar_component.dart';
-import 'package:kasir/features/member/index_member.dart';
+import 'package:kasir/features/kasir/component/sidebar_component.dart';
+import 'package:kasir/features/kasir/component/navbar_component.dart';
+import 'package:kasir/features/kasir/member/index_member.dart';
 
 class IndexMenuScreen extends StatefulWidget {
   const IndexMenuScreen({super.key});

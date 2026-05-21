@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kasir/store/data_menu.dart';
-import 'package:kasir/features/menu/component/manual_screen.dart';
+import 'package:kasir/features/kasir/menu/component/manual_screen.dart';
 
 class ListMenuScreen extends StatelessWidget {
   final List<Map<String, dynamic>> filteredMenu;

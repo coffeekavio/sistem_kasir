@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:kasir/component/sidebar_component.dart';
-import 'package:kasir/component/navbar_component.dart';
-import 'package:kasir/features/metode_pembayaran/qris_screen.dart';
-import 'package:kasir/features/metode_pembayaran/cash_screen.dart';
-import 'package:kasir/features/menu/edit_screen.dart';
+import 'package:kasir/features/kasir/component/sidebar_component.dart';
+import 'package:kasir/features/kasir/component/navbar_component.dart';
+import 'package:kasir/features/kasir/metode_pembayaran/qris_screen.dart';
+import 'package:kasir/features/kasir/metode_pembayaran/cash_screen.dart';
+import 'package:kasir/features/kasir/menu/edit_screen.dart';
 import 'package:kasir/store/data_menu.dart';
-import 'package:kasir/features/menu/component/checkout_screen.dart';
-import 'package:kasir/features/menu/component/manual_screen.dart';
-import 'package:kasir/features/menu/component/list_menu_screen.dart';
-import 'package:kasir/features/member/index_member.dart';
+import 'package:kasir/features/kasir/menu/component/checkout_screen.dart';
+import 'package:kasir/features/kasir/menu/component/manual_screen.dart';
+import 'package:kasir/features/kasir/menu/component/list_menu_screen.dart';
+import 'package:kasir/features/kasir/member/index_member.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});

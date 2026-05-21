@@ -17,7 +17,7 @@ final List<Map<String, dynamic>> menuList = [
   {
     "id": 3,
     "name": "Latte",
-    "price": "24000",
+      "price": "24000",
     "isFav": true,
     "category": "Coffee",
   },

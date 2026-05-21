@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:kasir/features/metode_pembayaran/qris_screen.dart';
-import 'package:kasir/features/metode_pembayaran/cash_screen.dart';
-import 'package:kasir/features/menu/edit_screen.dart';
+import 'package:kasir/features/kasir/metode_pembayaran/qris_screen.dart';
+import 'package:kasir/features/kasir/metode_pembayaran/cash_screen.dart';
+import 'package:kasir/features/kasir/menu/edit_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cart;

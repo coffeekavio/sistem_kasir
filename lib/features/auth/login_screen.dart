@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,12 +14,30 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   String? _errorText;
 
-  void _login() {
+  void _login() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    if (username == 'admin' && password == '1234') {
-      Navigator.of(context).pushReplacementNamed('/menu');
+    // Validasi credential dan tentukan route berdasarkan username
+    bool isValid = false;
+    String route = '';
+
+    if (username == 'supervisor' && password == '1234') {
+      isValid = true;
+      route = '/dashboard';
+    } else if (username == 'kasir' && password == '1234') {
+      isValid = true;
+      route = '/menu';
+    }
+
+    if (isValid) {
+      // Simpan username ke SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('username', username);
+
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(route);
+      }
     } else {
       setState(() {
         _errorText = 'Username atau password salah!';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kasir/features/kasir/component/sidebar_component.dart';
 import 'package:kasir/features/kasir/component/navbar_component.dart';
+import 'package:kasir/store/data_member.dart';
 
 class IndexMemberScreen extends StatefulWidget {
   const IndexMemberScreen({super.key});
@@ -14,50 +15,6 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-
-  // Data member dummy
-  final List<Map<String, dynamic>> _memberList = [
-    {
-      "id": 1,
-      "name": "Ahmad Budiman",
-      "phone": "082123456789",
-      "points": 2500,
-      "discount": 10,
-      "joinDate": "2024-01-15",
-    },
-    {
-      "id": 2,
-      "name": "Siti Nurhaliza",
-      "phone": "085678901234",
-      "points": 1850,
-      "discount": 5,
-      "joinDate": "2024-02-20",
-    },
-    {
-      "id": 3,
-      "name": "Budi Santoso",
-      "phone": "089876543210",
-      "points": 3200,
-      "discount": 15,
-      "joinDate": "2024-03-10",
-    },
-    {
-      "id": 4,
-      "name": "Rini Wijaya",
-      "phone": "087654321098",
-      "points": 1500,
-      "discount": 5,
-      "joinDate": "2024-03-25",
-    },
-    {
-      "id": 5,
-      "name": "Hendra Kusuma",
-      "phone": "081234567890",
-      "points": 2100,
-      "discount": 10,
-      "joinDate": "2024-04-05",
-    },
-  ];
 
   String _searchText = "";
 
@@ -253,8 +210,8 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                 if (_nameController.text.isNotEmpty &&
                     _phoneController.text.isNotEmpty) {
                   setState(() {
-                    _memberList.add({
-                      "id": _memberList.length + 1,
+                    memberList.add({
+                      "id": memberList.length + 1,
                       "name": _nameController.text,
                       "phone": _phoneController.text,
                       "points": 0,
@@ -462,12 +419,12 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                 if (_nameController.text.isNotEmpty &&
                     _phoneController.text.isNotEmpty) {
                   setState(() {
-                    final index = _memberList.indexWhere(
+                    final index = memberList.indexWhere(
                       (item) => item["id"] == member["id"],
                     );
                     if (index >= 0) {
-                      _memberList[index]["name"] = _nameController.text;
-                      _memberList[index]["phone"] = _phoneController.text;
+                      memberList[index]["name"] = _nameController.text;
+                      memberList[index]["phone"] = _phoneController.text;
                     }
                   });
                   Navigator.pop(context);
@@ -580,7 +537,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
               onPressed: () {
                 Navigator.pop(context);
                 setState(() {
-                  _memberList.removeWhere((item) => item["id"] == member["id"]);
+                  memberList.removeWhere((item) => item["id"] == member["id"]);
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -607,7 +564,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
   }
 
   List<Map<String, dynamic>> get _filteredMember {
-    return _memberList.where((member) {
+    return memberList.where((member) {
       final matchesSearch =
           member["name"].toString().toLowerCase().contains(
             _searchText.toLowerCase(),

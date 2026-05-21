@@ -3,6 +3,7 @@ import 'package:kasir/features/kasir/component/sidebar_component.dart';
 import 'package:kasir/features/kasir/component/navbar_component.dart';
 import 'package:intl/intl.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
+import 'package:kasir/store/data_transaksi.dart';
 
 class TransaksiScreen extends StatefulWidget {
   const TransaksiScreen({super.key});
@@ -15,125 +16,8 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
 
-  // Data transaksi dummy
-  final List<Map<String, dynamic>> _transaksiList = [
-    {
-      "id": "TRX001",
-      "date": DateTime.now(),
-      "time": "09:30",
-      "items": "Espresso x2, Cappuccino x1",
-      "total": 65000,
-      "method": "Tunai",
-      "status": "Selesai",
-      "member": "Ahmad Budiman",
-    },
-    {
-      "id": "TRX002",
-      "date": DateTime.now(),
-      "time": "10:15",
-      "items": "Latte x3",
-      "total": 72000,
-      "method": "Kartu Kredit",
-      "status": "Selesai",
-      "member": "Siti Nurhaliza",
-    },
-    {
-      "id": "TRX003",
-      "date": DateTime.now(),
-      "time": "11:45",
-      "items": "Americano x1, Snack Pastry x2",
-      "total": 48000,
-      "method": "QRIS",
-      "status": "Selesai",
-      "member": "-",
-    },
-    {
-      "id": "TRX004",
-      "date": DateTime.now().subtract(Duration(days: 1)),
-      "time": "14:20",
-      "items": "Fresh Juice x2, Coffee x1",
-      "total": 55000,
-      "method": "Tunai",
-      "status": "Selesai",
-      "member": "Budi Santoso",
-    },
-    {
-      "id": "TRX005",
-      "date": DateTime.now().subtract(Duration(days: 1)),
-      "time": "15:30",
-      "items": "Mochaccino x2",
-      "total": 54000,
-      "method": "Kartu Debit",
-      "status": "Selesai",
-      "member": "-",
-    },
-    {
-      "id": "TRX006",
-      "date": DateTime.now().subtract(Duration(days: 2)),
-      "time": "09:00",
-      "items": "Espresso x1, Cappuccino x2",
-      "total": 70000,
-      "method": "QRIS",
-      "status": "Selesai",
-      "member": "Rini Wijaya",
-    },
-    {
-      "id": "TRX007",
-      "date": DateTime.now().subtract(Duration(days: 3)),
-      "time": "16:45",
-      "items": "Iced Tea x3, Dessert x2",
-      "total": 85000,
-      "method": "Tunai",
-      "status": "Selesai",
-      "member": "Hendra Kusuma",
-    },
-  ];
-
-  final List<String> _methods = [
-    "Tunai",
-    "Kartu Kredit",
-    "Kartu Debit",
-    "QRIS",
-    "E-Wallet",
-  ];
-
   String _searchText = "";
   String _selectedFilter = "Semua"; // "Hari Ini", "Kemarin", "Semua"
-
-  // Helper untuk method icon
-  IconData _getMethodIcon(String method) {
-    switch (method) {
-      case "Tunai":
-        return Icons.attach_money;
-      case "Kartu Kredit":
-        return Icons.credit_card;
-      case "Kartu Debit":
-        return Icons.credit_card;
-      case "QRIS":
-        return Icons.qr_code_2;
-      case "E-Wallet":
-        return Icons.mobile_friendly;
-      default:
-        return Icons.payment;
-    }
-  }
-
-  Color _getMethodColor(String method) {
-    switch (method) {
-      case "Tunai":
-        return Colors.green;
-      case "Kartu Kredit":
-        return Colors.blue;
-      case "Kartu Debit":
-        return Colors.indigo;
-      case "QRIS":
-        return Color(0xFFC67C4E);
-      case "E-Wallet":
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
-  }
 
   void _openSidebar() {
     _scaffoldKey.currentState?.openDrawer();
@@ -161,7 +45,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
   }
 
   List<Map<String, dynamic>> get _filteredTransaksi {
-    return _transaksiList.where((transaksi) {
+    return transaksiList.where((transaksi) {
       bool matchesFilter = true;
 
       if (_selectedFilter == "Hari Ini") {
@@ -480,7 +364,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                           vertical: 4,
                                                         ),
                                                     decoration: BoxDecoration(
-                                                      color: _getMethodColor(
+                                                      color: getMethodColor(
                                                         transaksi["method"],
                                                       ).withOpacity(0.1),
                                                       borderRadius:
@@ -491,11 +375,11 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                     child: Row(
                                                       children: [
                                                         Icon(
-                                                          _getMethodIcon(
+                                                          getMethodIcon(
                                                             transaksi["method"],
                                                           ),
                                                           size: 11,
-                                                          color: _getMethodColor(
+                                                          color: getMethodColor(
                                                             transaksi["method"],
                                                           ),
                                                         ),
@@ -506,7 +390,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                             fontSize: 9,
                                                             fontWeight:
                                                                 FontWeight.w600,
-                                                            color: _getMethodColor(
+                                                            color: getMethodColor(
                                                               transaksi["method"],
                                                             ),
                                                           ),
