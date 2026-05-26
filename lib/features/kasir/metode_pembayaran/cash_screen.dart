@@ -286,7 +286,7 @@ class _CashScreenState extends State<CashScreen> {
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Color(0xFFC67C4E),
+                    color: Color(0xFF1E88E5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -394,7 +394,7 @@ class _CashScreenState extends State<CashScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.money, color: Color(0xFFC67C4E), size: 16),
+                      Icon(Icons.money, color: Color(0xFF1E88E5), size: 16),
                       SizedBox(width: 8),
                       Text(
                         'Metode: Tunai',
@@ -437,7 +437,7 @@ class _CashScreenState extends State<CashScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFC67C4E),
+                          backgroundColor: Color(0xFF1E88E5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

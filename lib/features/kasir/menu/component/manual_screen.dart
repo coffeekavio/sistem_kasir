@@ -93,7 +93,7 @@ class _ManualScreenState extends State<ManualScreen> {
                   color: Color(0xFFFCF5F5),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Color(0xFFC67C4E).withOpacity(0.2),
+                    color: Color(0xFF1E88E5).withOpacity(0.2),
                     width: 1.5,
                   ),
                 ),
@@ -139,7 +139,7 @@ class _ManualScreenState extends State<ManualScreen> {
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(6),
                                 borderSide: BorderSide(
-                                  color: Color(0xFFC67C4E),
+                                  color: Color(0xFF1E88E5),
                                   width: 2,
                                 ),
                               ),
@@ -152,7 +152,7 @@ class _ManualScreenState extends State<ManualScreen> {
                               counterText: "",
                               prefixIcon: Icon(
                                 Icons.local_cafe,
-                                color: Color(0xFFC67C4E),
+                                color: Color(0xFF1E88E5),
                                 size: 16,
                               ),
                             ),
@@ -189,7 +189,7 @@ class _ManualScreenState extends State<ManualScreen> {
                             ),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: Color(0xFFC67C4E).withOpacity(0.3),
+                                color: Color(0xFF1E88E5).withOpacity(0.3),
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(6),
@@ -211,7 +211,7 @@ class _ManualScreenState extends State<ManualScreen> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFFC67C4E),
+                                    color: Color(0xFF1E88E5),
                                   ),
                                 ),
                               ],
@@ -320,7 +320,7 @@ class _ManualScreenState extends State<ManualScreen> {
       onTap: _confirm,
       child: Container(
         decoration: BoxDecoration(
-          color: Color(0xFFC67C4E),
+          color: Color(0xFF1E88E5),
           borderRadius: BorderRadius.circular(3),
           boxShadow: [
             BoxShadow(

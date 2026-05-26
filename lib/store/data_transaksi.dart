@@ -110,7 +110,7 @@ Color getMethodColor(String method) {
     case "Kartu Debit":
       return Colors.indigo;
     case "QRIS":
-      return Color(0xFFC67C4E);
+      return Color(0xFF1E88E5);
     case "E-Wallet":
       return Colors.purple;
     default:

@@ -273,7 +273,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
                                                     fontSize: 10,
-                                                    color: Color(0xFFC67C4E),
+                                                    color: Color(0xFF1E88E5),
                                                   ),
                                                   maxLines: 1,
                                                   overflow:
@@ -344,7 +344,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                       shape: BoxShape.circle,
                                                       border: Border.all(
                                                         color: Color(
-                                                          0xFFC67C4E,
+                                                          0xFF1E88E5,
                                                         ),
                                                       ),
                                                     ),
@@ -352,7 +352,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                     child: Icon(
                                                       Icons.remove,
                                                       size: 14,
-                                                      color: Color(0xFFC67C4E),
+                                                      color: Color(0xFF1E88E5),
                                                     ),
                                                   ),
                                                 ),
@@ -376,7 +376,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                   child: Container(
                                                     decoration: BoxDecoration(
                                                       shape: BoxShape.circle,
-                                                      color: Color(0xFFC67C4E),
+                                                      color: Color(0xFF1E88E5),
                                                     ),
                                                     padding: EdgeInsets.all(4),
                                                     child: Icon(
@@ -417,7 +417,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                   child: Container(
                                                     decoration: BoxDecoration(
                                                       color: Color(
-                                                        0xFFC67C4E,
+                                                        0xFF1E88E5,
                                                       ).withOpacity(0.2),
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -428,7 +428,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                     child: Icon(
                                                       Icons.delete_outline,
                                                       size: 20,
-                                                      color: Color(0xFFC67C4E),
+                                                      color: Color(0xFF1E88E5),
                                                     ),
                                                   ),
                                                 ),
@@ -473,7 +473,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
-                          color: Color(0xFFC67C4E),
+                          color: Color(0xFF1E88E5),
                         ),
                       ),
                     ],
@@ -547,7 +547,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFC67C4E),
+                        backgroundColor: Color(0xFF1E88E5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

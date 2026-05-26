@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:kasir/features/supervisor/component/sidebar.dart';
-import 'package:kasir/features/supervisor/component/navbar_screen.dart';
 import 'package:kasir/store/data_transaksi.dart';
 import 'package:kasir/store/data_member.dart';
+import 'package:kasir/features/kasir/component/navbar_component.dart';
+import 'package:kasir/features/kasir/component/sidebar_component.dart';
+import 'package:kasir/services/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,53 +17,56 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _userName = "Admin";
+  String? _userRole;
   int _selectedSidebarIndex = 0;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserName();
+    _loadUserData();
   }
 
-  Future<void> _loadUserName() async {
-    final prefs = await SharedPreferences.getInstance();
-    final username = prefs.getString('username') ?? 'Admin';
-    setState(() {
-      _userName = username;
-    });
+  Future<void> _loadUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final username = prefs.getString('username') ?? 'Admin';
+      final role = await AuthService.getUserRole();
+      setState(() {
+        _userName = username;
+        _userRole = role;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await AuthService.logout();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));
+    }
+  }
+
+  void _handleDashboard() {
+    // Already on dashboard
+  }
+
+  void _handleMember() {
+    Navigator.of(context).pushNamed('/index_member');
   }
 
   void _openSidebar() {
     _scaffoldKey.currentState?.openDrawer();
-  }
-
-  void _onSidebarItemSelected(int index) {
-    setState(() {
-      _selectedSidebarIndex = index;
-    });
-    Navigator.of(context).pop(); // Close drawer
-    // Handle navigation based on index
-    switch (index) {
-      case 0:
-        // Dashboard - already here
-        break;
-      case 1:
-        // Transaksi
-        Navigator.of(context).pushNamed('/transaksi');
-        break;
-      case 2:
-        // Member
-        Navigator.of(context).pushNamed('/index_member');
-        break;
-      case 3:
-        // Menu
-        Navigator.of(context).pushNamed('/index_menu');
-        break;
-      case 6:
-        // Logout
-        Navigator.of(context).pushReplacementNamed('/login');
-        break;
-    }
   }
 
   // Hitung transaksi hari ini
@@ -117,187 +121,242 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final todayTransactionCount = _getTodayTransactionCount();
     final todayRevenue = _getTodayRevenue();
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: SupervisorSidebar(
-        selectedIndex: _selectedSidebarIndex,
-        onItemSelected: _onSidebarItemSelected,
-      ),
-      body: Column(
-        children: [
-          // Navbar
-          SupervisorNavbar(onMenuPressed: _openSidebar, userName: _userName),
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Container(
-                color: Color.fromARGB(255, 252, 250, 245),
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      "Dashboard",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3E2723),
-                      ),
-                    ),
-                    Text(
-                      DateFormat(
-                        'EEEE, dd MMMM yyyy',
-                        'id_ID',
-                      ).format(DateTime.now()),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    SizedBox(height: 20),
+    // Role-based conditional (seperti navbar)
+    bool isSupervisor = _userRole == 'supervisor';
 
-                    // Summary Cards Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSummaryCard(
-                            title: "Transaksi Hari Ini",
-                            value: todayTransactionCount.toString(),
-                            icon: Icons.receipt_long,
-                            bgColor: Colors.blue,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSummaryCard(
-                            title: "Revenue",
-                            value:
-                                "Rp ${_formatCurrency(todayRevenue.toInt())}",
-                            icon: Icons.trending_up,
-                            bgColor: Colors.green,
-                            isCurrency: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSummaryCard(
-                            title: "Total Member",
-                            value: memberList.length.toString(),
-                            icon: Icons.people,
-                            bgColor: Color(0xFFC67C4E),
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSummaryCard(
-                            title: "Metode Pembayaran",
-                            value: "5 Jenis",
-                            icon: Icons.payment,
-                            bgColor: Colors.purple,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 24),
+    // Loading state
+    if (_isLoading) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-                    // Recent Transactions
-                    Text(
-                      "Transaksi Terbaru",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3E2723),
+    // Access control - hanya untuk supervisor dan manager
+    if (isSupervisor) {
+      return Scaffold(
+        key: _scaffoldKey,
+        drawer: SidebarComponent(
+          userRole: _userRole,
+          onLogoutPressed: _handleLogout,
+        ),
+        body: Column(
+          children: [
+            // Navbar
+            NavbarComponent(
+              onMenuPressed: _openSidebar,
+              onDashboardPressed: _handleDashboard,
+              onMemberPressed: _handleMember,
+              onLogoutPressed: _handleLogout,
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Container(
+                  color: Color.fromARGB(255, 252, 250, 245),
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title
+                      Text(
+                        "Dashboard",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3E2723),
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 12),
-                    _getTodayTransactions().isEmpty
-                        ? Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.receipt_long,
-                                  size: 40,
-                                  color: Colors.grey[400],
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  "Belum ada transaksi hari ini",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
+                      Text(
+                        DateFormat(
+                          'EEEE, dd MMMM yyyy',
+                          'id_ID',
+                        ).format(DateTime.now()),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      SizedBox(height: 20),
+
+                      // Summary Cards Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryCard(
+                              title: "Transaksi Hari Ini",
+                              value: todayTransactionCount.toString(),
+                              icon: Icons.receipt_long,
+                              bgColor: Colors.blue,
                             ),
                           ),
-                        )
-                        : Column(
-                          children:
-                              _getTodayTransactions()
-                                  .map((transaksi) {
-                                    return _buildTransactionItem(transaksi);
-                                  })
-                                  .toList()
-                                  .cast<Widget>(),
-                        ),
-                    SizedBox(height: 24),
-
-                    // Recent Members
-                    Text(
-                      "Member Terbaru",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3E2723),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    memberList.isEmpty
-                        ? Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.people,
-                                  size: 40,
-                                  color: Colors.grey[400],
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  "Belum ada member",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSummaryCard(
+                              title: "Revenue",
+                              value:
+                                  "Rp ${_formatCurrency(todayRevenue.toInt())}",
+                              icon: Icons.trending_up,
+                              bgColor: Colors.green,
+                              isCurrency: true,
                             ),
                           ),
-                        )
-                        : Column(
-                          children:
-                              memberList
-                                  .take(5)
-                                  .map((member) {
-                                    return _buildMemberItem(member);
-                                  })
-                                  .toList()
-                                  .cast<Widget>(),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryCard(
+                              title: "Total Member",
+                              value: memberList.length.toString(),
+                              icon: Icons.people,
+                              bgColor: Color(0xFF1E88E5),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSummaryCard(
+                              title: "Metode Pembayaran",
+                              value: "5 Jenis",
+                              icon: Icons.payment,
+                              bgColor: Colors.purple,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 24),
+
+                      // Recent Transactions
+                      Text(
+                        "Transaksi Terbaru",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3E2723),
                         ),
-                    SizedBox(height: 24),
-                  ],
+                      ),
+                      SizedBox(height: 12),
+                      _getTodayTransactions().isEmpty
+                          ? Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.receipt_long,
+                                    size: 40,
+                                    color: Colors.grey[400],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    "Belum ada transaksi hari ini",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          : Column(
+                            children:
+                                _getTodayTransactions()
+                                    .map((transaksi) {
+                                      return _buildTransactionItem(transaksi);
+                                    })
+                                    .toList()
+                                    .cast<Widget>(),
+                          ),
+                      SizedBox(height: 24),
+
+                      // Recent Members
+                      Text(
+                        "Member Terbaru",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3E2723),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      memberList.isEmpty
+                          ? Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.people,
+                                    size: 40,
+                                    color: Colors.grey[400],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    "Belum ada member",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          : Column(
+                            children:
+                                memberList
+                                    .take(5)
+                                    .map((member) {
+                                      return _buildMemberItem(member);
+                                    })
+                                    .toList()
+                                    .cast<Widget>(),
+                          ),
+                      SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ),
+          ],
+        ),
+      );
+    } else {
+      // Access denied untuk non-supervisor/manager
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock, size: 64, color: Colors.red),
+              SizedBox(height: 16),
+              Text(
+                'Access Denied',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF3E2723),
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Dashboard hanya untuk Supervisor atau Manager',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.pushReplacementNamed(context, '/login'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF1E88E5),
+                ),
+                child: Text(
+                  'Kembali ke Login',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
 
   Widget _buildSummaryCard({
@@ -410,7 +469,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFC67C4E),
+                  color: Color(0xFF1E88E5),
                 ),
               ),
               Text(
@@ -436,9 +495,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Color(0xFFC67C4E).withOpacity(0.1),
+            backgroundColor: Color(0xFF1E88E5).withOpacity(0.1),
             radius: 16,
-            child: Icon(Icons.person, color: Color(0xFFC67C4E), size: 16),
+            child: Icon(Icons.person, color: Color(0xFF1E88E5), size: 16),
           ),
           SizedBox(width: 12),
           Expanded(

@@ -90,12 +90,12 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
               Container(
                 padding: EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Color(0xFFC67C4E).withOpacity(0.1),
+                  color: Color(0xFF1E88E5).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(
                   Icons.person_add,
-                  color: Color(0xFFC67C4E),
+                  color: Color(0xFF1E88E5),
                   size: 18,
                 ),
               ),
@@ -151,13 +151,13 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: Color(0xFFC67C4E),
+                          color: Color(0xFF1E88E5),
                           width: 2,
                         ),
                       ),
                       prefixIcon: Icon(
                         Icons.person,
-                        color: Color(0xFFC67C4E),
+                        color: Color(0xFF1E88E5),
                         size: 18,
                       ),
                       contentPadding: EdgeInsets.symmetric(
@@ -203,13 +203,13 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: Color(0xFFC67C4E),
+                          color: Color(0xFF1E88E5),
                           width: 2,
                         ),
                       ),
                       prefixIcon: Icon(
                         Icons.phone,
-                        color: Color(0xFFC67C4E),
+                        color: Color(0xFF1E88E5),
                         size: 18,
                       ),
                       contentPadding: EdgeInsets.symmetric(
@@ -242,7 +242,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFC67C4E),
+                backgroundColor: Color(0xFF1E88E5),
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -314,10 +314,10 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
               Container(
                 padding: EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Color(0xFFC67C4E).withOpacity(0.1),
+                  color: Color(0xFF1E88E5).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(Icons.edit, color: Color(0xFFC67C4E), size: 18),
+                child: Icon(Icons.edit, color: Color(0xFF1E88E5), size: 18),
               ),
               SizedBox(width: 12),
               Expanded(
@@ -366,13 +366,13 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: Color(0xFFC67C4E),
+                          color: Color(0xFF1E88E5),
                           width: 2,
                         ),
                       ),
                       prefixIcon: Icon(
                         Icons.person,
-                        color: Color(0xFFC67C4E),
+                        color: Color(0xFF1E88E5),
                         size: 18,
                       ),
                       contentPadding: EdgeInsets.symmetric(
@@ -412,13 +412,13 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: Color(0xFFC67C4E),
+                          color: Color(0xFF1E88E5),
                           width: 2,
                         ),
                       ),
                       prefixIcon: Icon(
                         Icons.phone,
-                        color: Color(0xFFC67C4E),
+                        color: Color(0xFF1E88E5),
                         size: 18,
                       ),
                       contentPadding: EdgeInsets.symmetric(
@@ -451,7 +451,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFC67C4E),
+                backgroundColor: Color(0xFF1E88E5),
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -708,7 +708,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                                   suffixIcon: Container(
                                     margin: EdgeInsets.all(4),
                                     decoration: BoxDecoration(
-                                      color: Color(0xFFC67C4E),
+                                      color: Color(0xFF1E88E5),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Icon(
@@ -726,7 +726,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                         SizedBox(width: 8),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFC67C4E),
+                            backgroundColor: Color(0xFF1E88E5),
                             padding: EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 6,
@@ -924,7 +924,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                                                   child: Container(
                                                     padding: EdgeInsets.all(6),
                                                     decoration: BoxDecoration(
-                                                      color: Color(0xFFC67C4E),
+                                                      color: Color(0xFF1E88E5),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                             6,

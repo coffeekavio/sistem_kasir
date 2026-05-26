@@ -84,7 +84,7 @@ class ListMenuScreen extends StatelessWidget {
                                 width: 28,
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: Color(0xFFC67C4E),
+                                  color: Color(0xFF1E88E5),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Center(
@@ -117,7 +117,7 @@ class ListMenuScreen extends StatelessWidget {
                     SizedBox(width: 12),
                     Container(
                       decoration: BoxDecoration(
-                        color: Color(0xFFC67C4E),
+                        color: Color(0xFF1E88E5),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       padding: EdgeInsets.symmetric(

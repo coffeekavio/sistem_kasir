@@ -9,6 +9,8 @@ import 'package:kasir/features/kasir/menu/component/checkout_screen.dart';
 import 'package:kasir/features/kasir/menu/component/manual_screen.dart';
 import 'package:kasir/features/kasir/menu/component/list_menu_screen.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
+import 'package:kasir/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -27,6 +29,37 @@ class _MenuScreenState extends State<MenuScreen> {
   String _selectedCategory = "All";
   String _selectedSection = "Produk"; // Manual, Produk, Favorit
   double _discountPercent = 0;
+  String? _userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    try {
+      final role = await AuthService.getUserRole();
+      setState(() {
+        _userRole = role;
+      });
+    } catch (e) {
+      print('Error loading user role: $e');
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await AuthService.logout();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));
+    }
+  }
 
   final List<String> _categories = [
     "All",
@@ -157,7 +190,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     width: double.maxFinite,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFC67C4E),
+                        backgroundColor: Color(0xFF1E88E5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -184,7 +217,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     width: double.maxFinite,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFC67C4E),
+                        backgroundColor: Color(0xFF1E88E5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -308,7 +341,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFC67C4E),
+                            backgroundColor: Color(0xFF1E88E5),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -396,7 +429,10 @@ class _MenuScreenState extends State<MenuScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: SidebarComponent(),
+      drawer: SidebarComponent(
+        userRole: _userRole,
+        onLogoutPressed: _handleLogout,
+      ),
       body: Column(
         children: [
           // Navbar di atas
@@ -442,7 +478,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
                                                 isSelected
-                                                    ? Color(0xFFC67C4E)
+                                                    ? Color(0xFF1E88E5)
                                                     : const Color.fromARGB(
                                                       255,
                                                       248,
@@ -566,7 +602,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                     suffixIcon: Container(
                                       margin: EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        color: Color(0xFFC67C4E),
+                                        color: Color(0xFF1E88E5),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Icon(

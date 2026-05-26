@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kasir/services/auth_service.dart';
+import 'package:kasir/services/api.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,34 +14,54 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String? _errorText;
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
   void _login() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    // Validasi credential dan tentukan route berdasarkan username
-    bool isValid = false;
-    String route = '';
-
-    if (username == 'supervisor' && password == '1234') {
-      isValid = true;
-      route = '/dashboard';
-    } else if (username == 'kasir' && password == '1234') {
-      isValid = true;
-      route = '/menu';
+    // Validasi input
+    if (username.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorText = 'Username dan password tidak boleh kosong!';
+      });
+      return;
     }
 
-    if (isValid) {
-      // Simpan username ke SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('username', username);
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    try {
+      // Melakukan login dengan API
+      final user = await AuthService.login(
+        username: username,
+        password: password,
+      );
 
       if (mounted) {
+        // Tentukan route berdasarkan role user
+        String route = '/menu'; // Default untuk kasir
+
+        if (user.role == 'supervisor') {
+          route = '/dashboard';
+        } else if (user.role == 'manager') {
+          route = '/dashboard';
+        }
+
         Navigator.of(context).pushReplacementNamed(route);
       }
-    } else {
+    } on ApiException catch (e) {
       setState(() {
-        _errorText = 'Username atau password salah!';
+        _errorText = e.message;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorText = 'Terjadi kesalahan: $e';
+        _isLoading = false;
       });
     }
   }
@@ -53,126 +74,239 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background image
+          // Background image (fixed)
           SizedBox(
             width: size.width,
             height: size.height,
             child: Image.asset("assets/bg.png", fit: BoxFit.cover),
           ),
-          // Black overlay
+          // Black overlay (fixed)
           Container(
             width: size.width,
             height: size.height,
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withOpacity(0.1),
           ),
-          // Content
-          Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? size.width * 0.2 : 32,
-                  vertical: isTablet ? 48 : 24,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
+          // Content (scrollable)
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                // Header dengan logo di kiri atas
+                Padding(
+                  padding: EdgeInsets.all(isTablet ? 32 : 20),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Image.asset(
                       'assets/logo-velo.png',
-                      width: isTablet ? 200 : 80,
-                      height: isTablet ? 200 : 80,
+                      width: isTablet ? 80 : 50,
+                      height: isTablet ? 80 : 50,
                       fit: BoxFit.contain,
                     ),
-                    SizedBox(height: isTablet ? 10 : 18),
-                    // Username
-                    TextField(
-                      controller: _usernameController,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.1),
-                        hintText: "Username",
-                        hintStyle: TextStyle(color: Colors.white70),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: Color(0xFFC67C4E),
-                            width: 2,
-                          ),
-                        ),
-                        prefixIcon: Icon(Icons.person, color: Colors.white70),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    // Password
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.1),
-                        hintText: "Password",
-                        hintStyle: TextStyle(color: Colors.white70),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: Color(0xFFC67C4E),
-                            width: 2,
-                          ),
-                        ),
-                        prefixIcon: Icon(Icons.lock, color: Colors.white70),
-                      ),
-                    ),
-                    if (_errorText != null) ...[
-                      SizedBox(height: 16),
-                      Text(
-                        _errorText!,
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                    ],
-                    SizedBox(height: 32),
-                    // Tombol Login
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC67C4E),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 3,
-                        ),
-                        onPressed: _login,
-                        child: Text(
-                          "Masuk",
-                          style: GoogleFonts.sora(
-                            color: Colors.white,
-                            fontSize: isTablet ? 14 : 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                // Card dengan form login
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: isTablet ? 0 : 60,
+                    bottom: 40,
+                    left: isTablet ? 32 : 24,
+                    right: isTablet ? 32 : 24,
+                  ),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: isTablet ? 450 : 380,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        padding: EdgeInsets.all(isTablet ? 40 : 32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Judul
+                            Text(
+                              'Selamat Datang!',
+                              style: GoogleFonts.sora(
+                                fontSize: isTablet ? 18 : 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E88E5),
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            // Subtitle
+                            Text(
+                              'Masuk untuk mengakses dashboard',
+                              style: GoogleFonts.sora(
+                                fontSize: isTablet ? 12 : 12,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                            // Error message (kecil di dalam card)
+                            if (_errorText != null) ...[
+                              SizedBox(height: 12),
+                              Text(
+                                _errorText!,
+                                style: TextStyle(
+                                  color: Colors.red[600],
+                                  fontSize: 11,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                            SizedBox(height: 32),
+                            // Username
+                            TextField(
+                              controller: _usernameController,
+                              enabled: !_isLoading,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              decoration: InputDecoration(
+                                filled: false,
+                                hintText: "Nama Pengguna",
+                                hintStyle: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                border: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Color(0xFF2563EB),
+                                    width: 2,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 0,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 20),
+                            // Password
+                            TextField(
+                              controller: _passwordController,
+                              enabled: !_isLoading,
+                              obscureText: _obscurePassword,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              decoration: InputDecoration(
+                                filled: false,
+                                hintText: "Kata Sandi",
+                                hintStyle: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.grey[400],
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                                border: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Color(0xFF2563EB),
+                                    width: 2,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 0,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 32),
+                            // Tombol Login
+                            SizedBox(
+                              width: double.infinity,
+                              height: 40,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF1E88E5),
+                                  disabledBackgroundColor: Color(
+                                    0xFF2563EB,
+                                  ).withOpacity(0.6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                onPressed: _isLoading ? null : _login,
+                                child:
+                                    _isLoading
+                                        ? SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
+                                          ),
+                                        )
+                                        : Text(
+                                          "Masuk",
+                                          style: GoogleFonts.sora(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

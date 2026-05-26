@@ -117,7 +117,7 @@ class _QrisScreenState extends State<QrisScreen> {
                             color: Colors.grey[100],
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Color(0xFFC67C4E),
+                              color: Color(0xFF1E88E5),
                               width: 2,
                             ),
                           ),
@@ -127,7 +127,7 @@ class _QrisScreenState extends State<QrisScreen> {
                               Icon(
                                 Icons.qr_code_2,
                                 size: 120,
-                                color: Color(0xFFC67C4E),
+                                color: Color(0xFF1E88E5),
                               ),
                               SizedBox(height: 12),
                               Text(
@@ -295,7 +295,7 @@ class _QrisScreenState extends State<QrisScreen> {
                             Container(
                               padding: EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: Color(0xFFC67C4E).withOpacity(0.08),
+                                color: Color(0xFF1E88E5).withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -314,7 +314,7 @@ class _QrisScreenState extends State<QrisScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: Color(0xFFC67C4E),
+                                      color: Color(0xFF1E88E5),
                                     ),
                                   ),
                                 ],
@@ -327,7 +327,7 @@ class _QrisScreenState extends State<QrisScreen> {
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Color(0xFFC67C4E).withOpacity(0.1),
+                            color: Color(0xFF1E88E5).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -335,7 +335,7 @@ class _QrisScreenState extends State<QrisScreen> {
                             children: [
                               Icon(
                                 Icons.qr_code_2,
-                                color: Color(0xFFC67C4E),
+                                color: Color(0xFF1E88E5),
                                 size: 20,
                               ),
                               SizedBox(width: 8),
@@ -344,7 +344,7 @@ class _QrisScreenState extends State<QrisScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
-                                  color: Color(0xFFC67C4E),
+                                  color: Color(0xFF1E88E5),
                                 ),
                               ),
                             ],
@@ -389,7 +389,7 @@ class _QrisScreenState extends State<QrisScreen> {
                       // Confirm Button
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFC67C4E),
+                          backgroundColor: Color(0xFF1E88E5),
                           padding: EdgeInsets.symmetric(
                             horizontal: 20,
                             vertical: 12,

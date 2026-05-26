@@ -4,6 +4,8 @@ import 'package:kasir/features/kasir/component/navbar_component.dart';
 import 'package:intl/intl.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
 import 'package:kasir/store/data_transaksi.dart';
+import 'package:kasir/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TransaksiScreen extends StatefulWidget {
   const TransaksiScreen({super.key});
@@ -18,6 +20,37 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
 
   String _searchText = "";
   String _selectedFilter = "Semua"; // "Hari Ini", "Kemarin", "Semua"
+  String? _userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    try {
+      final role = await AuthService.getUserRole();
+      setState(() {
+        _userRole = role;
+      });
+    } catch (e) {
+      print('Error loading user role: $e');
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await AuthService.logout();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));
+    }
+  }
 
   void _openSidebar() {
     _scaffoldKey.currentState?.openDrawer();
@@ -80,7 +113,10 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: SidebarComponent(),
+      drawer: SidebarComponent(
+        userRole: _userRole,
+        onLogoutPressed: _handleLogout,
+      ),
       body: Column(
         children: [
           // Navbar
@@ -137,7 +173,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Color(
-                                            0xFFC67C4E,
+                                            0xFF1E88E5,
                                           ).withOpacity(0.1),
                                           borderRadius: BorderRadius.circular(
                                             4,
@@ -147,7 +183,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                           "${_filteredTransaksi.length} item",
                                           style: TextStyle(
                                             fontSize: 9,
-                                            color: Color(0xFFC67C4E),
+                                            color: Color(0xFF1E88E5),
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -174,7 +210,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                       hintStyle: TextStyle(fontSize: 10),
                                       prefixIcon: Icon(
                                         Icons.search,
-                                        color: Color(0xFFC67C4E),
+                                        color: Color(0xFF1E88E5),
                                         size: 16,
                                       ),
                                       border: OutlineInputBorder(
@@ -192,7 +228,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide(
-                                          color: Color(0xFFC67C4E),
+                                          color: Color(0xFF1E88E5),
                                           width: 2,
                                         ),
                                       ),
@@ -471,7 +507,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                         ),
                                                     decoration: BoxDecoration(
                                                       color: Color(
-                                                        0xFFC67C4E,
+                                                        0xFF1E88E5,
                                                       ).withOpacity(0.1),
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -485,7 +521,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                         fontWeight:
                                                             FontWeight.w600,
                                                         color: Color(
-                                                          0xFFC67C4E,
+                                                          0xFF1E88E5,
                                                         ),
                                                       ),
                                                     ),
@@ -548,7 +584,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         isSelected
-                                            ? Color(0xFFC67C4E)
+                                            ? Color(0xFF1E88E5)
                                             : Colors.grey[100],
                                     foregroundColor:
                                         isSelected
@@ -583,6 +619,32 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
         ],
       ),
     );
+  }
+
+  Color getMethodColor(String method) {
+    switch (method) {
+      case "Tunai":
+        return Colors.green;
+      case "QRIS":
+        return Colors.blue;
+      case "Transfer":
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData getMethodIcon(String method) {
+    switch (method) {
+      case "Tunai":
+        return Icons.money;
+      case "QRIS":
+        return Icons.qr_code_2;
+      case "Transfer":
+        return Icons.account_balance;
+      default:
+        return Icons.payment;
+    }
   }
 
   @override

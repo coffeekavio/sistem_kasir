@@ -127,7 +127,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
       case "Kartu Debit":
         return Colors.indigo;
       case "QRIS":
-        return Color(0xFFC67C4E);
+        return Color(0xFF1E88E5);
       case "E-Wallet":
         return Colors.purple;
       default:
@@ -253,7 +253,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Color(
-                                            0xFFC67C4E,
+                                            0xFF1E88E5,
                                           ).withOpacity(0.1),
                                           borderRadius: BorderRadius.circular(
                                             4,
@@ -263,7 +263,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                           "${_filteredTransaksi.length} item",
                                           style: TextStyle(
                                             fontSize: 9,
-                                            color: Color(0xFFC67C4E),
+                                            color: Color(0xFF1E88E5),
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -290,7 +290,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                       hintStyle: TextStyle(fontSize: 10),
                                       prefixIcon: Icon(
                                         Icons.search,
-                                        color: Color(0xFFC67C4E),
+                                        color: Color(0xFF1E88E5),
                                         size: 16,
                                       ),
                                       border: OutlineInputBorder(
@@ -308,7 +308,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide(
-                                          color: Color(0xFFC67C4E),
+                                          color: Color(0xFF1E88E5),
                                           width: 2,
                                         ),
                                       ),
@@ -587,7 +587,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                         ),
                                                     decoration: BoxDecoration(
                                                       color: Color(
-                                                        0xFFC67C4E,
+                                                        0xFF1E88E5,
                                                       ).withOpacity(0.1),
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -601,7 +601,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                         fontWeight:
                                                             FontWeight.w600,
                                                         color: Color(
-                                                          0xFFC67C4E,
+                                                          0xFF1E88E5,
                                                         ),
                                                       ),
                                                     ),
@@ -664,7 +664,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         isSelected
-                                            ? Color(0xFFC67C4E)
+                                            ? Color(0xFF1E88E5)
                                             : Colors.grey[100],
                                     foregroundColor:
                                         isSelected

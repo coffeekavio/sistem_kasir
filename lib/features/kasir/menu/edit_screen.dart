@@ -138,7 +138,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: Color(0xFFC67C4E),
+                            color: Color(0xFF1E88E5),
                             width: 2,
                           ),
                         ),
@@ -185,7 +185,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: Color(0xFFC67C4E),
+                            color: Color(0xFF1E88E5),
                             width: 2,
                           ),
                         ),
@@ -232,7 +232,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: Color(0xFFC67C4E),
+                            color: Color(0xFF1E88E5),
                             width: 2,
                           ),
                         ),
@@ -372,7 +372,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
-                                  color: Color(0xFFC67C4E),
+                                  color: Color(0xFF1E88E5),
                                 ),
                               ),
                             ],
@@ -412,7 +412,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFC67C4E),
+                              backgroundColor: Color(0xFF1E88E5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
