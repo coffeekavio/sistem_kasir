@@ -4,13 +4,12 @@ import 'package:kasir/features/kasir/component/navbar_component.dart';
 import 'package:kasir/features/kasir/metode_pembayaran/qris_screen.dart';
 import 'package:kasir/features/kasir/metode_pembayaran/cash_screen.dart';
 import 'package:kasir/features/kasir/menu/edit_screen.dart';
-import 'package:kasir/store/data_menu.dart';
+import 'package:kasir/services/menu_service.dart';
 import 'package:kasir/features/kasir/menu/component/checkout_screen.dart';
 import 'package:kasir/features/kasir/menu/component/manual_screen.dart';
 import 'package:kasir/features/kasir/menu/component/list_menu_screen.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
 import 'package:kasir/services/auth_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -24,9 +23,11 @@ class _MenuScreenState extends State<MenuScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   String _searchText = "";
+  List<Map<String, dynamic>> _menuList = [];
   final List<Map<String, dynamic>> _cart = [];
   String? _customerName;
   String _selectedCategory = "All";
+  List<String> _categories = ['All'];
   String _selectedSection = "Produk"; // Manual, Produk, Favorit
   double _discountPercent = 0;
   String? _userRole;
@@ -35,6 +36,7 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
     _loadUserRole();
+    _loadMenusAndCategories();
   }
 
   Future<void> _loadUserRole() async {
@@ -45,6 +47,20 @@ class _MenuScreenState extends State<MenuScreen> {
       });
     } catch (e) {
       print('Error loading user role: $e');
+    }
+  }
+
+  Future<void> _loadMenusAndCategories() async {
+    try {
+      final cafeId = await AuthService.getCafeId();
+      final menus = await MenuService.fetchMenus(cafeId);
+      final cats = await MenuService.fetchCategories(cafeId);
+      setState(() {
+        _menuList = menus;
+        _categories = ['All', ...cats];
+      });
+    } catch (e) {
+      print('Error loading menus/categories: $e');
     }
   }
 
@@ -60,15 +76,6 @@ class _MenuScreenState extends State<MenuScreen> {
       ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));
     }
   }
-
-  final List<String> _categories = [
-    "All",
-    "Coffee",
-    "Beverages",
-    "BBQ",
-    "Snacks",
-    "Desserts",
-  ];
 
   String generateMenuAbbreviation(String name) {
     List<String> words = name.split(' ');
@@ -419,13 +426,28 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredMenu =
-        menuList
-            .where(
-              (item) => item["name"]!.toLowerCase().contains(
-                _searchText.toLowerCase(),
-              ),
-            )
-            .toList();
+        _menuList.where((item) {
+          final name = (item['name'] ?? '').toString().toLowerCase();
+          if (!name.contains(_searchText.toLowerCase())) return false;
+
+          // Category filter
+          if (_selectedCategory.toLowerCase() != 'all') {
+            final itemCat =
+                (item['category'] ?? item['category_id'] ?? '')
+                    .toString()
+                    .toLowerCase();
+            if (itemCat != _selectedCategory.toLowerCase()) return false;
+          }
+
+          // Section filter: Favorit
+          if (_selectedSection == 'Favorit') {
+            final isFav =
+                item['isFav'] ?? item['is_fav'] ?? item['favorite'] ?? false;
+            if (!(isFav == true || isFav.toString() == 'true')) return false;
+          }
+
+          return true;
+        }).toList();
 
     return Scaffold(
       key: _scaffoldKey,

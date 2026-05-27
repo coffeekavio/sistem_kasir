@@ -16,7 +16,7 @@ class SidebarComponent extends StatelessWidget {
 
     return Drawer(
       child: Container(
-        color: const Color(0xFF3E2723),
+        color: const Color(0xFF0D47A1),
         child: Column(
           children: [
             Padding(
@@ -24,7 +24,7 @@ class SidebarComponent extends StatelessWidget {
               child: Column(
                 children: [
                   Image.asset(
-                    'assets/logo-velo.png',
+                    'assets/logo-white.png',
                     width: isTablet ? 80 : 60,
                     height: isTablet ? 80 : 60,
                     fit: BoxFit.contain,
