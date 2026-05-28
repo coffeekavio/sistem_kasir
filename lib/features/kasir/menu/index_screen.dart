@@ -4,12 +4,15 @@ import 'package:kasir/features/kasir/component/navbar_component.dart';
 import 'package:kasir/features/kasir/metode_pembayaran/qris_screen.dart';
 import 'package:kasir/features/kasir/metode_pembayaran/cash_screen.dart';
 import 'package:kasir/features/kasir/menu/edit_screen.dart';
-import 'package:kasir/services/menu_service.dart';
 import 'package:kasir/features/kasir/menu/component/checkout_screen.dart';
 import 'package:kasir/features/kasir/menu/component/manual_screen.dart';
 import 'package:kasir/features/kasir/menu/component/list_menu_screen.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
 import 'package:kasir/services/auth_service.dart';
+import 'package:kasir/services/kategori_service.dart';
+import 'package:kasir/services/polling_service.dart';
+import 'package:kasir/providers/menu_provider.dart';
+import 'package:provider/provider.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -23,11 +26,11 @@ class _MenuScreenState extends State<MenuScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   String _searchText = "";
-  List<Map<String, dynamic>> _menuList = [];
   final List<Map<String, dynamic>> _cart = [];
   String? _customerName;
   String _selectedCategory = "All";
-  List<String> _categories = ['All'];
+  List<Map<String, dynamic>> _categories = [];
+  Map<String, String> _categoryNameById = {};
   String _selectedSection = "Produk"; // Manual, Produk, Favorit
   double _discountPercent = 0;
   String? _userRole;
@@ -36,7 +39,16 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
     _loadUserRole();
-    _loadMenusAndCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadMenus();
+    });
+  }
+
+  @override
+  void dispose() {
+    PollingService.stop();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserRole() async {
@@ -50,22 +62,161 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
-  Future<void> _loadMenusAndCategories() async {
+  Future<void> _loadMenus() async {
     try {
-      final cafeId = await AuthService.getCafeId();
-      final menus = await MenuService.fetchMenus(cafeId);
-      final cats = await MenuService.fetchCategories(cafeId);
+      context.read<MenuProvider>().initData();
+      PollingService.start(context);
+      await _loadCategories();
+    } catch (e) {
+      print('Error loading menus: $e');
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await KategoriService.fetchCategories();
+      if (!mounted) return;
+
       setState(() {
-        _menuList = menus;
-        _categories = ['All', ...cats];
+        _categories = categories;
+        _categoryNameById = {
+          for (final category in categories)
+            if ((category['id'] ?? '').toString().trim().isNotEmpty)
+              category['id'].toString().trim():
+                  (category['name'] ?? '').toString().trim(),
+        };
       });
     } catch (e) {
-      print('Error loading menus/categories: $e');
+      if (mounted) {
+        print('Error loading categories: $e');
+      }
     }
+  }
+
+  String _menuCategoryLabel(Map<String, dynamic> item) {
+    final categoryName = item['category_name'] ?? item['category'];
+    if (categoryName != null && categoryName.toString().trim().isNotEmpty) {
+      return categoryName.toString().trim();
+    }
+
+    final categoryId = item['category_id']?.toString().trim();
+    if (categoryId != null && categoryId.isNotEmpty) {
+      final mappedName = _categoryNameById[categoryId];
+      if (mappedName != null && mappedName.trim().isNotEmpty) {
+        return mappedName.trim();
+      }
+      return categoryId;
+    }
+
+    return '';
+  }
+
+  List<String> _buildCategories(List<Map<String, dynamic>> menus) {
+    final categories = <String>{};
+
+    for (final category in _categories) {
+      final name = (category['name'] ?? '').toString().trim();
+      if (name.isNotEmpty) {
+        categories.add(name);
+      }
+    }
+
+    for (final item in menus) {
+      final category = _menuCategoryLabel(item);
+      if (category.isNotEmpty) {
+        categories.add(category);
+      }
+    }
+
+    final sortedCategories = categories.toList()..sort();
+    return ['All', ...sortedCategories];
+  }
+
+  List<Map<String, dynamic>> _applyDisplayFilters(
+    List<Map<String, dynamic>> menus,
+  ) {
+    return menus.where((item) {
+      if (_selectedCategory.toLowerCase() != 'all') {
+        final itemCat = _menuCategoryLabel(item).toLowerCase();
+        if (itemCat != _selectedCategory.toLowerCase()) return false;
+      }
+
+      if (_selectedSection == 'Favorit') {
+        final isFav =
+            item['isFav'] ?? item['is_fav'] ?? item['favorite'] ?? false;
+        if (!(isFav == true || isFav.toString() == 'true')) return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  Widget _buildEmptyMenuState() {
+    final hasSearch = _searchText.trim().isNotEmpty;
+    final hasCategoryFilter = _selectedCategory.toLowerCase() != 'all';
+
+    final title =
+        hasSearch
+            ? 'Menu tidak ditemukan'
+            : hasCategoryFilter
+            ? 'Belum ada menu di kategori ini'
+            : 'Belum ada menu tersedia';
+
+    final subtitle =
+        hasSearch
+            ? 'Coba kata kunci lain untuk menemukan menu yang dicari.'
+            : hasCategoryFilter
+            ? 'Silakan pilih kategori lain atau kembali ke All.'
+            : 'Data menu belum tersedia saat ini.';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E88E5).withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                color: Color(0xFF1E88E5),
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF3E2723),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleLogout() async {
     try {
+      PollingService.stop();
       await AuthService.logout();
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
@@ -425,30 +576,6 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredMenu =
-        _menuList.where((item) {
-          final name = (item['name'] ?? '').toString().toLowerCase();
-          if (!name.contains(_searchText.toLowerCase())) return false;
-
-          // Category filter
-          if (_selectedCategory.toLowerCase() != 'all') {
-            final itemCat =
-                (item['category'] ?? item['category_id'] ?? '')
-                    .toString()
-                    .toLowerCase();
-            if (itemCat != _selectedCategory.toLowerCase()) return false;
-          }
-
-          // Section filter: Favorit
-          if (_selectedSection == 'Favorit') {
-            final isFav =
-                item['isFav'] ?? item['is_fav'] ?? item['favorite'] ?? false;
-            if (!(isFav == true || isFav.toString() == 'true')) return false;
-          }
-
-          return true;
-        }).toList();
-
     return Scaffold(
       key: _scaffoldKey,
       drawer: SidebarComponent(
@@ -472,226 +599,251 @@ class _MenuScreenState extends State<MenuScreen> {
                 // Daftar menu (kiri)
                 Expanded(
                   flex: 2,
-                  child: Column(
-                    children: [
-                      // Navigasi Manual, Produk, Favorit + Kategori
-                      Container(
-                        color: Colors.white,
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                        child: Column(
-                          children: [
-                            // Navigation tabs + Kategori
-                            SizedBox(
-                              height: 35,
-                              child: Row(
-                                children: [
-                                  // Section tabs
-                                  Expanded(
-                                    child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: _sections.length,
-                                      separatorBuilder:
-                                          (_, __) => SizedBox(width: 8),
-                                      itemBuilder: (context, index) {
-                                        final section = _sections[index];
-                                        final isSelected =
-                                            _selectedSection == section;
-                                        return ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                isSelected
-                                                    ? Color(0xFF1E88E5)
-                                                    : const Color.fromARGB(
-                                                      255,
-                                                      248,
-                                                      248,
-                                                      248,
-                                                    ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            setState(() {
-                                              _selectedSection = section;
-                                            });
+                  child: Consumer<MenuProvider>(
+                    builder: (context, menuProvider, child) {
+                      final categories = _buildCategories(menuProvider.menus);
+                      final filteredMenu = _applyDisplayFilters(
+                        menuProvider.filteredMenus,
+                      );
+
+                      return Column(
+                        children: [
+                          // Navigasi Manual, Produk, Favorit + Kategori
+                          Container(
+                            color: Colors.white,
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                            child: Column(
+                              children: [
+                                // Navigation tabs + Kategori
+                                SizedBox(
+                                  height: 35,
+                                  child: Row(
+                                    children: [
+                                      // Section tabs
+                                      Expanded(
+                                        child: ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: _sections.length,
+                                          separatorBuilder:
+                                              (_, __) => SizedBox(width: 8),
+                                          itemBuilder: (context, index) {
+                                            final section = _sections[index];
+                                            final isSelected =
+                                                _selectedSection == section;
+                                            return ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    isSelected
+                                                        ? Color(0xFF1E88E5)
+                                                        : const Color.fromARGB(
+                                                          255,
+                                                          248,
+                                                          248,
+                                                          248,
+                                                        ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _selectedSection = section;
+                                                });
+                                              },
+                                              child: Text(
+                                                section,
+                                                style: TextStyle(
+                                                  color:
+                                                      isSelected
+                                                          ? Colors.white
+                                                          : Colors.black87,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            );
                                           },
-                                          child: Text(
-                                            section,
-                                            style: TextStyle(
-                                              color:
-                                                  isSelected
-                                                      ? Colors.white
-                                                      : Colors.black87,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 10,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      // Dropdown kategori
+                                      SizedBox(
+                                        width: 120,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Color.fromARGB(
+                                              255,
+                                              248,
+                                              248,
+                                              248,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey[200]!,
                                             ),
                                           ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          child: DropdownButton<String>(
+                                            isDense: true,
+                                            value: _selectedCategory,
+                                            isExpanded: true,
+                                            underline: SizedBox(),
+                                            items:
+                                                categories.map((category) {
+                                                  return DropdownMenuItem<
+                                                    String
+                                                  >(
+                                                    value: category,
+                                                    child: Text(
+                                                      category,
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 10,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                            onChanged: (value) {
+                                              if (value != null) {
+                                                setState(() {
+                                                  _selectedCategory = value;
+                                                });
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                // Search field
+                                SizedBox(
+                                  height: 36,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Color.fromARGB(255, 248, 248, 248),
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.04),
+                                          blurRadius: 3,
+                                          offset: Offset(0, 2),
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: TextField(
+                                      controller: _searchController,
+                                      textAlignVertical:
+                                          TextAlignVertical.center,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _searchText = value;
+                                        });
+                                        context.read<MenuProvider>().searchMenu(
+                                          value,
                                         );
                                       },
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        hintText: "Cari Produk",
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 11,
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 2,
+                                        ),
+                                        suffixIcon: Container(
+                                          margin: EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Color(0xFF1E88E5),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.search,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ),
+                                      style: TextStyle(fontSize: 12),
                                     ),
                                   ),
-                                  SizedBox(width: 8),
-                                  // Dropdown kategori
-                                  SizedBox(
-                                    width: 120,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Color.fromARGB(
-                                          255,
-                                          248,
-                                          248,
-                                          248,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: Colors.grey[200]!,
-                                        ),
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      child: DropdownButton<String>(
-                                        isDense: true,
-                                        value: _selectedCategory,
-                                        isExpanded: true,
-                                        underline: SizedBox(),
-                                        items:
-                                            _categories.map((category) {
-                                              return DropdownMenuItem<String>(
-                                                value: category,
-                                                child: Text(
-                                                  category,
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 10,
-                                                  ),
-                                                ),
-                                              );
-                                            }).toList(),
-                                        onChanged: (value) {
-                                          if (value != null) {
-                                            setState(() {
-                                              _selectedCategory = value;
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Konten Manual atau List
+                          Expanded(
+                            child:
+                                _selectedSection == "Manual"
+                                    ? ManualScreen(
+                                      onAddManualItem: (name, price) {
+                                        setState(() {
+                                          final index = _cart.indexWhere(
+                                            (item) => item["name"] == name,
+                                          );
+                                          if (index >= 0) {
+                                            _cart[index]["qty"] += 1;
+                                          } else {
+                                            _cart.add({
+                                              "name": name,
+                                              "variant": "Manual",
+                                              "price": price,
+                                              "qty": 1,
                                             });
                                           }
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            // Search field
-                            SizedBox(
-                              height: 36,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Color.fromARGB(255, 248, 248, 248),
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
-                                      blurRadius: 3,
-                                      offset: Offset(0, 2),
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
-                                ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  textAlignVertical: TextAlignVertical.center,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _searchText = value;
-                                    });
-                                  },
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    hintText: "Cari Produk",
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 11,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 2,
-                                    ),
-                                    suffixIcon: Container(
-                                      margin: EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Color(0xFF1E88E5),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Icon(
-                                        Icons.search,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Konten Manual atau List
-                      Expanded(
-                        child:
-                            _selectedSection == "Manual"
-                                ? ManualScreen(
-                                  onAddManualItem: (name, price) {
-                                    setState(() {
-                                      final index = _cart.indexWhere(
-                                        (item) => item["name"] == name,
-                                      );
-                                      if (index >= 0) {
-                                        _cart[index]["qty"] += 1;
-                                      } else {
-                                        _cart.add({
-                                          "name": name,
-                                          "variant": "Manual",
-                                          "price": price,
-                                          "qty": 1,
                                         });
-                                      }
-                                    });
-                                  },
-                                )
-                                : ListMenuScreen(
-                                  filteredMenu: filteredMenu,
-                                  searchText: _searchText,
-                                  searchController: _searchController,
-                                  selectedSection: _selectedSection,
-                                  selectedCategory: _selectedCategory,
-                                  onSearchChanged: (value) {
-                                    setState(() {
-                                      _searchText = value;
-                                    });
-                                  },
-                                  onCategoryChanged: (value) {
-                                    setState(() {
-                                      _selectedCategory = value;
-                                    });
-                                  },
-                                  onSectionChanged: (value) {
-                                    setState(() {
-                                      _selectedSection = value;
-                                    });
-                                  },
-                                  onAddToCart: _addToCart,
-                                  onShowManualScreen: _showManualScreen,
-                                  generateMenuAbbreviation:
-                                      generateMenuAbbreviation,
-                                ),
-                      ),
-                    ],
+                                      },
+                                    )
+                                    : filteredMenu.isEmpty
+                                    ? _buildEmptyMenuState()
+                                    : ListMenuScreen(
+                                      filteredMenu: filteredMenu,
+                                      searchText: _searchText,
+                                      searchController: _searchController,
+                                      selectedSection: _selectedSection,
+                                      selectedCategory: _selectedCategory,
+                                      onSearchChanged: (value) {
+                                        setState(() {
+                                          _searchText = value;
+                                        });
+                                        context.read<MenuProvider>().searchMenu(
+                                          value,
+                                        );
+                                      },
+                                      onCategoryChanged: (value) {
+                                        setState(() {
+                                          _selectedCategory = value;
+                                        });
+                                      },
+                                      onSectionChanged: (value) {
+                                        setState(() {
+                                          _selectedSection = value;
+                                        });
+                                      },
+                                      onAddToCart: _addToCart,
+                                      onShowManualScreen: _showManualScreen,
+                                      generateMenuAbbreviation:
+                                          generateMenuAbbreviation,
+                                    ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 // Keranjang (kanan)
