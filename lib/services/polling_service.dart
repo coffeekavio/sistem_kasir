@@ -2,37 +2,66 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'package:kasir/providers/menu_provider.dart';
 
 class PollingService {
-  static Timer? _timer;
+  static Timer? _fastTimer;
+  static Timer? _slowTimer;
+  static VoidCallback? _onMenuSync;
+  static VoidCallback? _onCategorySync;
+  static VoidCallback? _onMemberSync;
 
-  static void start(BuildContext context) {
-    if (_timer != null && _timer!.isActive) {
+  static void start({
+    required VoidCallback onMenuSync,
+    VoidCallback? onCategorySync,
+    VoidCallback? onMemberSync,
+  }) {
+    _onMenuSync = onMenuSync;
+    _onCategorySync = onCategorySync;
+    _onMemberSync = onMemberSync;
+
+    final fastActive = _fastTimer != null && _fastTimer!.isActive;
+    final slowActive = _slowTimer != null && _slowTimer!.isActive;
+    if (fastActive && slowActive) {
       return;
     }
 
     if (kDebugMode) {
-      print('Polling Service Dinyalakan!');
+      print('Polling Service Dinyalakan dengan Smart Schedule!');
     }
 
-    _timer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      if (kDebugMode) {
-        print('Memeriksa update data di background...');
-      }
+    if (!fastActive) {
+      _fastTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+        if (kDebugMode) {
+          print('Memeriksa update menu di background...');
+        }
 
-      context.read<MenuProvider>().fetchMenusFromApi(showLoading: false);
-    });
+        _onMenuSync?.call();
+      });
+    }
+
+    if (!slowActive) {
+      _slowTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+        if (kDebugMode) {
+          print('Memeriksa update kategori di background...');
+        }
+
+        Future.delayed(const Duration(seconds: 1), () {
+          _onCategorySync?.call();
+          _onMemberSync?.call();
+        });
+      });
+    }
   }
 
   static void stop() {
-    _timer?.cancel();
-    _timer = null;
+    _fastTimer?.cancel();
+    _fastTimer = null;
+
+    _slowTimer?.cancel();
+    _slowTimer = null;
 
     if (kDebugMode) {
-      print('Polling Service Dimatikan.');
+      print('Semua Polling Service Dimatikan.');
     }
   }
 }

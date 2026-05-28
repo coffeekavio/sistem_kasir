@@ -9,8 +9,8 @@ import 'package:kasir/features/kasir/menu/component/manual_screen.dart';
 import 'package:kasir/features/kasir/menu/component/list_menu_screen.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
 import 'package:kasir/services/auth_service.dart';
-import 'package:kasir/services/kategori_service.dart';
 import 'package:kasir/services/polling_service.dart';
+import 'package:kasir/providers/kategori_provider.dart';
 import 'package:kasir/providers/menu_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -34,18 +34,60 @@ class _MenuScreenState extends State<MenuScreen> {
   String _selectedSection = "Produk"; // Manual, Produk, Favorit
   double _discountPercent = 0;
   String? _userRole;
+  MenuProvider? _menuProvider;
+  KategoriProvider? _kategoriProvider;
 
   @override
   void initState() {
     super.initState();
     _loadUserRole();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _attachProviders();
       _loadMenus();
+    });
+  }
+
+  void _attachProviders() {
+    _menuProvider = context.read<MenuProvider>();
+    _kategoriProvider = context.read<KategoriProvider>();
+    _menuProvider?.addListener(_syncFromProviders);
+    _kategoriProvider?.addListener(_syncFromProviders);
+    _syncFromProviders();
+  }
+
+  void _syncFromProviders() {
+    if (!mounted) return;
+
+    final kategoriProvider = _kategoriProvider;
+    final categoryItems = kategoriProvider?.categories ?? [];
+    final categoryNameById = kategoriProvider?.categoryNameById ?? {};
+    final categories = <String>{'All'};
+
+    for (final category in categoryItems) {
+      final name = (category['name'] ?? '').toString().trim();
+      if (name.isNotEmpty) {
+        categories.add(name);
+      }
+    }
+
+    if (_selectedCategory != 'All' && !categories.contains(_selectedCategory)) {
+      _selectedCategory = 'All';
+    }
+
+    setState(() {
+      _categories = categoryItems;
+      _categoryNameById = categoryNameById;
     });
   }
 
   @override
   void dispose() {
+    if (_menuProvider != null) {
+      _menuProvider?.removeListener(_syncFromProviders);
+    }
+    if (_kategoriProvider != null) {
+      _kategoriProvider?.removeListener(_syncFromProviders);
+    }
     PollingService.stop();
     _searchController.dispose();
     super.dispose();
@@ -65,32 +107,41 @@ class _MenuScreenState extends State<MenuScreen> {
   Future<void> _loadMenus() async {
     try {
       context.read<MenuProvider>().initData();
-      PollingService.start(context);
-      await _loadCategories();
+      context.read<KategoriProvider>().initData();
+      PollingService.start(
+        onMenuSync: () {
+          context.read<MenuProvider>().fetchMenusFromApi(showLoading: false);
+        },
+        onCategorySync: () {
+          context.read<KategoriProvider>().fetchCategoriesFromApi(
+            showLoading: false,
+          );
+        },
+      );
     } catch (e) {
       print('Error loading menus: $e');
     }
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final categories = await KategoriService.fetchCategories();
-      if (!mounted) return;
+  List<String> _buildCategories(List<Map<String, dynamic>> menus) {
+    final categoryNames = <String>{};
 
-      setState(() {
-        _categories = categories;
-        _categoryNameById = {
-          for (final category in categories)
-            if ((category['id'] ?? '').toString().trim().isNotEmpty)
-              category['id'].toString().trim():
-                  (category['name'] ?? '').toString().trim(),
-        };
-      });
-    } catch (e) {
-      if (mounted) {
-        print('Error loading categories: $e');
+    for (final category in _categories) {
+      final name = (category['name'] ?? '').toString().trim();
+      if (name.isNotEmpty) {
+        categoryNames.add(name);
       }
     }
+
+    for (final item in menus) {
+      final category = _menuCategoryLabel(item);
+      if (category.isNotEmpty) {
+        categoryNames.add(category);
+      }
+    }
+
+    final sortedCategories = categoryNames.toList()..sort();
+    return ['All', ...sortedCategories];
   }
 
   String _menuCategoryLabel(Map<String, dynamic> item) {
@@ -109,27 +160,6 @@ class _MenuScreenState extends State<MenuScreen> {
     }
 
     return '';
-  }
-
-  List<String> _buildCategories(List<Map<String, dynamic>> menus) {
-    final categories = <String>{};
-
-    for (final category in _categories) {
-      final name = (category['name'] ?? '').toString().trim();
-      if (name.isNotEmpty) {
-        categories.add(name);
-      }
-    }
-
-    for (final item in menus) {
-      final category = _menuCategoryLabel(item);
-      if (category.isNotEmpty) {
-        categories.add(category);
-      }
-    }
-
-    final sortedCategories = categories.toList()..sort();
-    return ['All', ...sortedCategories];
   }
 
   List<Map<String, dynamic>> _applyDisplayFilters(

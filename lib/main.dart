@@ -9,6 +9,7 @@ import 'package:kasir/features/supervisor/dashboard/index.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kasir/features/kasir/category/index_category.dart';
+import 'package:kasir/providers/kategori_provider.dart';
 import 'package:kasir/providers/menu_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -23,8 +24,11 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => MenuProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => MenuProvider()),
+        ChangeNotifierProvider(create: (_) => KategoriProvider()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:data_table_2/data_table_2.dart';
 import 'package:kasir/features/kasir/component/sidebar_component.dart';
 import 'package:kasir/features/kasir/component/navbar_component.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
 import 'package:kasir/services/auth_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kasir/services/polling_service.dart';
+import 'package:kasir/providers/kategori_provider.dart';
+import 'package:kasir/providers/menu_provider.dart';
+import 'package:provider/provider.dart';
 
 class IndexMenuScreen extends StatefulWidget {
   const IndexMenuScreen({super.key});
@@ -16,11 +20,71 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   String? _userRole;
+  List<Map<String, dynamic>> _menuList = [];
+  List<String> _categories = ['Semua'];
+  Map<String, String> _categoryNameById = {};
+  int _rowsPerPage = 10;
+  MenuProvider? _menuProvider;
+  KategoriProvider? _kategoriProvider;
 
   @override
   void initState() {
     super.initState();
     _loadUserRole();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _attachProviders();
+      _loadMenuAndCategories();
+    });
+  }
+
+  void _attachProviders() {
+    _menuProvider = context.read<MenuProvider>();
+    _kategoriProvider = context.read<KategoriProvider>();
+    _menuProvider?.addListener(_syncFromProviders);
+    _kategoriProvider?.addListener(_syncFromProviders);
+    _syncFromProviders();
+  }
+
+  void _syncFromProviders() {
+    if (!mounted) return;
+
+    final menus = _menuProvider?.menus ?? const [];
+    final categories = _kategoriProvider?.categories ?? const [];
+    final categoryNameById = _kategoriProvider?.categoryNameById ?? {};
+
+    final categoryNames = <String>{'Semua'};
+    for (final category in categories) {
+      final name = (category['name'] ?? '').toString().trim();
+      if (name.isNotEmpty) {
+        categoryNames.add(name);
+      }
+    }
+
+    setState(() {
+      _menuList = List<Map<String, dynamic>>.from(menus);
+      _categories = categoryNames.toList();
+      _categoryNameById = categoryNameById;
+      if (_selectedCategory != 'Semua' &&
+          !_categories.contains(_selectedCategory)) {
+        _selectedCategory = 'Semua';
+      }
+    });
+  }
+
+  Future<void> _loadMenuAndCategories() async {
+    context.read<MenuProvider>().initData();
+    context.read<KategoriProvider>().initData();
+
+    PollingService.start(
+      onMenuSync: () {
+        context.read<MenuProvider>().fetchMenusFromApi(showLoading: false);
+      },
+      onCategorySync: () {
+        context.read<KategoriProvider>().fetchCategoriesFromApi(
+          showLoading: false,
+        );
+      },
+    );
   }
 
   Future<void> _loadUserRole() async {
@@ -36,6 +100,7 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
 
   Future<void> _handleLogout() async {
     try {
+      PollingService.stop();
       await AuthService.logout();
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
@@ -46,83 +111,6 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
       ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));
     }
   }
-
-  // Data menu dummy
-  final List<Map<String, dynamic>> _menuList = [
-    {
-      "id": 1,
-      "name": "Espresso",
-      "price": 20000,
-      "category": "Coffee",
-      "available": true,
-      "description": "Kopi hitam pekat dengan rasa kuat",
-    },
-    {
-      "id": 2,
-      "name": "Cappuccino",
-      "price": 25000,
-      "category": "Coffee",
-      "available": true,
-      "description": "Kopi dengan susu foam yang lembut",
-    },
-    {
-      "id": 3,
-      "name": "Latte",
-      "price": 24000,
-      "category": "Coffee",
-      "available": true,
-      "description": "Kopi dengan susu halus",
-    },
-    {
-      "id": 4,
-      "name": "Americano",
-      "price": 18000,
-      "category": "Coffee",
-      "available": true,
-      "description": "Espresso dengan air panas",
-    },
-    {
-      "id": 5,
-      "name": "Mochaccino",
-      "price": 27000,
-      "category": "Coffee",
-      "available": false,
-      "description": "Kopi dengan cokelat dan susu",
-    },
-    {
-      "id": 6,
-      "name": "Iced Tea",
-      "price": 15000,
-      "category": "Beverages",
-      "available": true,
-      "description": "Teh es segar",
-    },
-    {
-      "id": 7,
-      "name": "Fresh Juice",
-      "price": 20000,
-      "category": "Beverages",
-      "available": true,
-      "description": "Jus buah segar",
-    },
-    {
-      "id": 8,
-      "name": "Chicken BBQ",
-      "price": 35000,
-      "category": "BBQ",
-      "available": true,
-      "description": "Ayam panggang dengan bumbu spesial",
-    },
-  ];
-
-  final List<String> _categories = [
-    "Semua",
-    "Coffee",
-    "Beverages",
-    "BBQ",
-    "Snacks",
-    "Desserts",
-  ];
 
   String _searchText = "";
   String _selectedCategory = "Semua";
@@ -194,13 +182,32 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
     );
   }
 
+  String _menuCategoryLabel(Map<String, dynamic> menu) {
+    final categoryName = menu['category_name'] ?? menu['category'];
+    if (categoryName != null && categoryName.toString().trim().isNotEmpty) {
+      return categoryName.toString().trim();
+    }
+
+    final categoryId = menu['category_id']?.toString().trim();
+    if (categoryId != null && categoryId.isNotEmpty) {
+      final mappedName = _categoryNameById[categoryId];
+      if (mappedName != null && mappedName.trim().isNotEmpty) {
+        return mappedName.trim();
+      }
+      return categoryId;
+    }
+
+    return '';
+  }
+
   List<Map<String, dynamic>> get _filteredMenu {
     return _menuList.where((menu) {
       final matchesSearch = menu["name"].toString().toLowerCase().contains(
         _searchText.toLowerCase(),
       );
       final matchesCategory =
-          _selectedCategory == "Semua" || menu["category"] == _selectedCategory;
+          _selectedCategory == "Semua" ||
+          _menuCategoryLabel(menu) == _selectedCategory;
       return matchesSearch && matchesCategory;
     }).toList();
   }
@@ -365,7 +372,7 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
                 ),
               ),
               // Menu List
-              Expanded(child: _buildMenuList()),
+              Expanded(child: _buildDesktopMenuTable()),
             ],
           ),
         ),
@@ -606,36 +613,100 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
           ),
         ),
         // Menu List
-        Expanded(child: _buildMenuList()),
+        Expanded(child: _buildMobileMenuList()),
       ],
     );
   }
 
-  // Common Menu List Builder
-  Widget _buildMenuList() {
-    return _filteredMenu.isEmpty
-        ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
-              SizedBox(height: 12),
-              Text(
-                "Tidak ada menu",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                "Tambahkan menu pertama Anda",
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-              ),
-            ],
+  Widget _buildDesktopMenuTable() {
+    final filteredMenu = _filteredMenu;
+
+    if (filteredMenu.isEmpty) {
+      return _buildEmptyMenuState();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: PaginatedDataTable2(
+          wrapInCard: false,
+          minWidth: 640,
+          columnSpacing: 16,
+          horizontalMargin: 12,
+          headingRowHeight: 36,
+          dataRowHeight: 50,
+          rowsPerPage: _rowsPerPage,
+          availableRowsPerPage: const [5, 10, 20, 50],
+          showFirstLastButtons: true,
+          onRowsPerPageChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              _rowsPerPage = value;
+            });
+          },
+          headingTextStyle: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF3E2723),
           ),
-        )
+          headingRowColor: WidgetStateProperty.all(Colors.white),
+          border: TableBorder(
+            horizontalInside: BorderSide(color: Colors.grey[200]!, width: 0.5),
+          ),
+          columns: const [
+            DataColumn2(
+              label: Align(alignment: Alignment.center, child: Text('No')),
+              size: ColumnSize.S,
+              fixedWidth: 54,
+              numeric: true,
+            ),
+            DataColumn2(label: Text('Nama Menu'), size: ColumnSize.L),
+            DataColumn2(
+              label: Align(
+                alignment: Alignment.centerRight,
+                child: Text('Harga'),
+              ),
+              size: ColumnSize.M,
+              fixedWidth: 140,
+              numeric: true,
+            ),
+          ],
+          source: _MenuDataSource(menus: filteredMenu),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyMenuState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
+          SizedBox(height: 12),
+          Text(
+            "Tidak ada menu",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            "Tambahkan menu pertama Anda",
+            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mobile menu list builder
+  Widget _buildMobileMenuList() {
+    return _filteredMenu.isEmpty
+        ? _buildEmptyMenuState()
         : ListView.builder(
           padding: EdgeInsets.all(8),
           itemCount: _filteredMenu.length,
@@ -758,8 +829,88 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
 
   @override
   void dispose() {
+    if (_menuProvider != null) {
+      _menuProvider?.removeListener(_syncFromProviders);
+    }
+    if (_kategoriProvider != null) {
+      _kategoriProvider?.removeListener(_syncFromProviders);
+    }
+    PollingService.stop();
     _searchController.dispose();
     super.dispose();
+  }
+}
+
+class _MenuDataSource extends DataTableSource {
+  _MenuDataSource({required this.menus});
+
+  final List<Map<String, dynamic>> menus;
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= menus.length) return null;
+    final menu = menus[index];
+
+    return DataRow(
+      cells: [
+        DataCell(
+          Center(
+            child: Text(
+              '${index + 1}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+        ),
+        DataCell(
+          Text(
+            menu['name'].toString(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF3E2723),
+            ),
+          ),
+        ),
+        DataCell(
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              _formatPrice(menu['price']),
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1E88E5),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  int get rowCount => menus.length;
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get selectedRowCount => 0;
+
+  String _formatPrice(dynamic value) {
+    final raw = value?.toString() ?? '0';
+    final number = int.tryParse(raw) ?? 0;
+    final formatted = number.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (match) => '${match[1]}.',
+    );
+    return 'Rp $formatted';
   }
 }
 

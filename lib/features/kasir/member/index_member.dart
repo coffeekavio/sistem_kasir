@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:data_table_2/data_table_2.dart';
 import 'package:kasir/features/kasir/component/sidebar_component.dart';
 import 'package:kasir/features/kasir/component/navbar_component.dart';
 import 'package:kasir/store/data_member.dart';
 import 'package:kasir/services/auth_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class IndexMemberScreen extends StatefulWidget {
   const IndexMemberScreen({super.key});
@@ -20,6 +20,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
 
   String _searchText = "";
   String? _userRole;
+  int _rowsPerPage = 10;
 
   @override
   void initState() {
@@ -611,6 +612,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isTablet = size.width >= 600;
+    final filteredMember = _filteredMember;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -653,7 +655,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              "Total member: ${_filteredMember.length}",
+                              "Total member: ${filteredMember.length}",
                               style: TextStyle(
                                 fontSize: 10,
                                 color: Colors.grey[600],
@@ -745,7 +747,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                   // Member List
                   Expanded(
                     child:
-                        _filteredMember.isEmpty
+                        filteredMember.isEmpty
                             ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -775,222 +777,71 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
                                 ],
                               ),
                             )
-                            : ListView.builder(
-                              padding: EdgeInsets.all(8),
-                              itemCount: _filteredMember.length,
-                              itemBuilder: (context, index) {
-                                final member = _filteredMember[index];
-                                return Container(
-                                  margin: EdgeInsets.only(bottom: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
+                            : Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: PaginatedDataTable2(
+                                  wrapInCard: false,
+                                  minWidth: 780,
+                                  columnSpacing: 8,
+                                  horizontalMargin: 8,
+                                  headingRowHeight: 36,
+                                  dataRowHeight: 48,
+                                  rowsPerPage: _rowsPerPage,
+                                  availableRowsPerPage: const [5, 10, 20, 50],
+                                  showFirstLastButtons: true,
+                                  onRowsPerPageChanged: (value) {
+                                    if (value == null) return;
+                                    setState(() {
+                                      _rowsPerPage = value;
+                                    });
+                                  },
+                                  headingTextStyle: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF3E2723),
+                                  ),
+                                  headingRowColor: WidgetStateProperty.all(
+                                    Colors.white,
+                                  ),
+                                  border: TableBorder(
+                                    horizontalInside: BorderSide(
                                       color: Colors.grey[200]!,
                                       width: 0.5,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.02),
-                                        blurRadius: 2,
-                                        offset: Offset(0, 0.5),
-                                      ),
-                                    ],
                                   ),
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
+                                  columns: const [
+                                    DataColumn2(
+                                      label: Text('Nama'),
+                                      size: ColumnSize.L,
                                     ),
-                                    child: Row(
-                                      children: [
-                                        // Nama Item
-                                        SizedBox(
-                                          width: 150,
-                                          child: Text(
-                                            member["name"],
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF3E2723),
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        // Nomor HP
-                                        SizedBox(
-                                          width: 130,
-                                          child: Text(
-                                            member["phone"],
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              color: Colors.grey[600],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        // Points Badge
-                                        SizedBox(
-                                          width: 60,
-                                          child: Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 3,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[100],
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              "${member["points"]}P",
-                                              style: TextStyle(
-                                                fontSize: 8,
-                                                color: Colors.grey[700],
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        // Diskon Badge
-                                        SizedBox(
-                                          width: 110,
-                                          child: Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 3,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green[50],
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              border: Border.all(
-                                                color: Colors.green[200]!,
-                                                width: 0.5,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              "Rp${member["discount"] * 1000}",
-                                              style: TextStyle(
-                                                fontSize: 8,
-                                                color: Colors.green[700],
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
-                                        Spacer(),
-                                        // Action Buttons
-                                        SizedBox(
-                                          width: 120,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            children: [
-                                              Tooltip(
-                                                message: "Ke Transaksi",
-                                                child: InkWell(
-                                                  onTap: () {
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text(
-                                                          '${member["name"]} ditambahkan ke transaksi',
-                                                        ),
-                                                        duration: Duration(
-                                                          seconds: 2,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                  child: Container(
-                                                    padding: EdgeInsets.all(6),
-                                                    decoration: BoxDecoration(
-                                                      color: Color(0xFF1E88E5),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            6,
-                                                          ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.add_shopping_cart,
-                                                      size: 14,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(width: 6),
-                                              Tooltip(
-                                                message: "Edit",
-                                                child: InkWell(
-                                                  onTap: () {
-                                                    _editMember(member);
-                                                  },
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                  child: Container(
-                                                    padding: EdgeInsets.all(6),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.blue[600],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            6,
-                                                          ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.edit,
-                                                      size: 14,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(width: 6),
-                                              Tooltip(
-                                                message: "Hapus",
-                                                child: InkWell(
-                                                  onTap: () {
-                                                    _deleteMember(member);
-                                                  },
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                  child: Container(
-                                                    padding: EdgeInsets.all(6),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.red[600],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            6,
-                                                          ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.delete,
-                                                      size: 14,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                    DataColumn2(
+                                      label: Text('No HP'),
+                                      size: ColumnSize.M,
                                     ),
+                                    DataColumn2(
+                                      label: Text('Poin'),
+                                      size: ColumnSize.S,
+                                      numeric: true,
+                                    ),
+                                    DataColumn2(
+                                      label: Text('Diskon'),
+                                      size: ColumnSize.M,
+                                      numeric: true,
+                                    ),
+                                    DataColumn2(
+                                      label: Text('Aksi'),
+                                      size: ColumnSize.M,
+                                    ),
+                                  ],
+                                  source: _MemberDataSource(
+                                    members: filteredMember,
+                                    context: context,
+                                    onEdit: _editMember,
                                   ),
-                                );
-                              },
+                                ),
+                              ),
                             ),
                   ),
                 ],
@@ -1009,4 +860,152 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
     _phoneController.dispose();
     super.dispose();
   }
+}
+
+class _MemberDataSource extends DataTableSource {
+  _MemberDataSource({
+    required this.members,
+    required this.context,
+    required this.onEdit,
+  });
+
+  final List<Map<String, dynamic>> members;
+  final BuildContext context;
+  final void Function(Map<String, dynamic> member) onEdit;
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= members.length) return null;
+    final member = members[index];
+
+    return DataRow(
+      cells: [
+        DataCell(
+          Text(
+            member["name"],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF3E2723),
+            ),
+          ),
+        ),
+        DataCell(
+          Text(
+            member["phone"],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+          ),
+        ),
+        DataCell(
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                "${member["points"]}P",
+                style: TextStyle(
+                  fontSize: 8,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+        DataCell(
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.green[200]!, width: 0.5),
+              ),
+              child: Text(
+                "Rp${member["discount"] * 1000}",
+                style: TextStyle(
+                  fontSize: 8,
+                  color: Colors.green[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+        DataCell(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Tooltip(
+                message: "Ke Transaksi",
+                child: InkWell(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${member["name"]} ditambahkan ke transaksi',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1E88E5),
+                      borderRadius: BorderRadius.all(Radius.circular(6)),
+                    ),
+                    child: const Icon(
+                      Icons.add_shopping_cart,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Tooltip(
+                message: "Edit",
+                child: InkWell(
+                  onTap: () => onEdit(member),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[600],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  int get rowCount => members.length;
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get selectedRowCount => 0;
 }
