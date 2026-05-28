@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kasir/features/kasir/metode_pembayaran/qris_screen.dart';
 import 'package:kasir/features/kasir/metode_pembayaran/cash_screen.dart';
 import 'package:kasir/features/kasir/menu/edit_screen.dart';
+import 'package:kasir/services/member_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
@@ -44,6 +45,8 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   late TextEditingController _discountController;
   late TextEditingController _customerNameController;
+  List<Map<String, dynamic>> _memberSuggestions = [];
+  bool _isSearchingMembers = false;
 
   @override
   void initState() {
@@ -90,64 +93,165 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ),
                       SizedBox(height: 12),
-                      // Input Nama Pelanggan (Required)
+                      // Input Nama Pelanggan (Optional)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                "Nama Pelanggan",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                " *",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            "Nama Member (Opsional)",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
                           ),
                           SizedBox(height: 6),
-                          TextField(
-                            controller: _customerNameController,
-                            onChanged: (value) {
+                          Autocomplete<Map<String, dynamic>>(
+                            optionsBuilder: (
+                              TextEditingValue textEditingValue,
+                            ) async {
+                              if (textEditingValue.text.isEmpty) {
+                                return [];
+                              }
+                              // API call untuk search member
+                              setState(() {
+                                _isSearchingMembers = true;
+                              });
+                              try {
+                                final members =
+                                    await MemberService.searchMembers(
+                                      textEditingValue.text,
+                                    );
+                                return members;
+                              } catch (e) {
+                                print('Error searching members: $e');
+                                return [];
+                              } finally {
+                                if (mounted) {
+                                  setState(() {
+                                    _isSearchingMembers = false;
+                                  });
+                                }
+                              }
+                            },
+                            onSelected: (Map<String, dynamic> selection) {
+                              _customerNameController.text =
+                                  selection['name'] ?? '';
                               widget.onCustomerNameChanged(
-                                value.isEmpty ? null : value,
+                                selection['name'] ?? '',
                               );
                               setState(() {});
                             },
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: "Masukkan nama pelanggan",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                                borderSide: BorderSide(
-                                  color: Colors.grey[300]!,
+                            fieldViewBuilder: (
+                              context,
+                              textEditingController,
+                              focusNode,
+                              onFieldSubmitted,
+                            ) {
+                              _customerNameController = textEditingController;
+                              return TextField(
+                                controller: textEditingController,
+                                focusNode: focusNode,
+                                onChanged: (value) {
+                                  widget.onCustomerNameChanged(
+                                    value.isEmpty ? null : value,
+                                  );
+                                  setState(() {});
+                                },
+                                onSubmitted: (_) => onFieldSubmitted(),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: "Cari nama member",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey[300]!,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    borderSide: BorderSide(color: Colors.grey),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                  suffixIcon:
+                                      _isSearchingMembers
+                                          ? SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: Padding(
+                                              padding: EdgeInsets.all(8.0),
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          )
+                                          : null,
                                 ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                                borderSide: BorderSide(
-                                  color: Colors.grey,
-                                  width: 2,
+                                style: TextStyle(fontSize: 10),
+                              );
+                            },
+                            optionsViewBuilder: (context, onSelected, options) {
+                              return Align(
+                                alignment: Alignment.topLeft,
+                                child: Material(
+                                  child: Container(
+                                    width: 200,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: options.length,
+                                      itemBuilder: (context, index) {
+                                        final option = options.elementAt(index);
+                                        return InkWell(
+                                          onTap: () => onSelected(option),
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  option['name'] ?? '',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                                if (option['phone'] != null)
+                                                  Text(
+                                                    option['phone'] ?? '',
+                                                    style: TextStyle(
+                                                      fontSize: 8,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                            ),
-                            style: TextStyle(fontSize: 10),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -525,36 +629,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color.fromARGB(255, 248, 248, 248),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () {
-                        // TODO: Implementasi member
-                      },
-                      child: Text(
-                        "Member",
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF1E88E5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       onPressed:
-                          (widget.cart.isEmpty ||
-                                  _customerNameController.text.trim().isEmpty)
+                          widget.cart.isEmpty
                               ? null
                               : widget.onShowPaymentDialog,
                       child: Text(

@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:kasir/features/kasir/component/sidebar_component.dart';
 import 'package:kasir/features/kasir/component/navbar_component.dart';
-import 'package:kasir/store/data_member.dart';
 import 'package:kasir/services/auth_service.dart';
+import 'package:kasir/services/member_service.dart';
+import 'package:kasir/features/kasir/member/models/member_constants.dart';
+import 'package:kasir/features/kasir/member/dialogs/member_dialogs.dart';
+import 'package:kasir/features/kasir/member/widgets/member_data_source.dart';
+import 'package:kasir/features/kasir/member/helpers/member_operation_helper.dart';
 
 class IndexMemberScreen extends StatefulWidget {
   const IndexMemberScreen({super.key});
@@ -21,21 +25,55 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
   String _searchText = "";
   String? _userRole;
   int _rowsPerPage = 10;
+  bool _isLoadingMembers = true;
+  String? _errorMessage;
+  List<Map<String, dynamic>> _memberList = [];
 
   @override
   void initState() {
     super.initState();
     _loadUserRole();
+    _loadMembers();
   }
 
   Future<void> _loadUserRole() async {
     try {
       final role = await AuthService.getUserRole();
-      setState(() {
-        _userRole = role;
-      });
+      if (mounted) {
+        setState(() {
+          _userRole = role;
+        });
+      }
     } catch (e) {
       print('Error loading user role: $e');
+    }
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      if (mounted) {
+        setState(() {
+          _isLoadingMembers = true;
+          _errorMessage = null;
+        });
+      }
+
+      final members = await MemberService.fetchMembers();
+
+      if (mounted) {
+        setState(() {
+          _memberList = members;
+          _isLoadingMembers = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Gagal memuat member: ${e.toString()}';
+          _isLoadingMembers = false;
+        });
+      }
+      print('Error loading members: $e');
     }
   }
 
@@ -46,9 +84,13 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
         Navigator.of(context).pushReplacementNamed('/login');
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));
+      if (mounted) {
+        MemberOperationHelper.showSnackBar(
+          context: context,
+          message: 'Logout gagal: $e',
+          isSuccess: false,
+        );
+      }
     }
   }
 
@@ -57,548 +99,70 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
   }
 
   void _openMember() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Anda sudah di halaman Member'),
-        duration: Duration(seconds: 1),
-      ),
+    MemberOperationHelper.showSnackBar(
+      context: context,
+      message: 'Anda sudah di halaman Member',
+      isSuccess: true,
+      duration: Duration(seconds: 1),
     );
   }
 
   void _addMember() {
-    _nameController.clear();
-    _phoneController.clear();
-    showDialog(
+    MemberDialogs.showAddMemberDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Color(0xFF1E88E5).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  Icons.person_add,
-                  color: Color(0xFF1E88E5),
-                  size: 18,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Tambah Member Baru',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF3E2723),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          titlePadding: EdgeInsets.fromLTRB(16, 16, 16, 12),
-          contentPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: "Nama Member",
-                      hintText: "Masukkan nama lengkap",
-                      labelStyle: TextStyle(
-                        color: Color(0xFF3E2723),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      hintStyle: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[300]!,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Color(0xFF1E88E5),
-                          width: 2,
-                        ),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.person,
-                        color: Color(0xFF1E88E5),
-                        size: 18,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    autofocus: true,
-                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: "Nomor HP",
-                      hintText: "08xxxxxxxxxx",
-                      labelStyle: TextStyle(
-                        color: Color(0xFF3E2723),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      hintStyle: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[300]!,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Color(0xFF1E88E5),
-                          width: 2,
-                        ),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.phone,
-                        color: Color(0xFF1E88E5),
-                        size: 18,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              child: Text(
-                'Batal',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF1E88E5),
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-              onPressed: () {
-                if (_nameController.text.isNotEmpty &&
-                    _phoneController.text.isNotEmpty) {
-                  setState(() {
-                    memberList.add({
-                      "id": memberList.length + 1,
-                      "name": _nameController.text,
-                      "phone": _phoneController.text,
-                      "points": 0,
-                      "discount": 0,
-                      "joinDate": DateTime.now().toString().split(' ')[0],
-                    });
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Member "${_nameController.text}" berhasil ditambahkan',
-                      ),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Nama dan nomor HP harus diisi'),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-              child: Text(
-                'Tambah',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-          actionsPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-        );
+      nameController: _nameController,
+      phoneController: _phoneController,
+      onSave: (name, phone) async {
+        setState(() => _isLoadingMembers = true);
+        try {
+          await MemberService.createMember(name: name, phone: phone, points: 0);
+          if (mounted) {
+            await _loadMembers();
+          }
+        } finally {
+          if (mounted) {
+            setState(() => _isLoadingMembers = false);
+          }
+        }
       },
+      isLoading: _isLoadingMembers,
     );
   }
 
   void _editMember(Map<String, dynamic> member) {
-    _nameController.text = member["name"];
-    _phoneController.text = member["phone"];
-    showDialog(
+    MemberDialogs.showEditMemberDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Color(0xFF1E88E5).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(Icons.edit, color: Color(0xFF1E88E5), size: 18),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Edit Member',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF3E2723),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          titlePadding: EdgeInsets.fromLTRB(16, 16, 16, 12),
-          contentPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: "Nama Member",
-                      labelStyle: TextStyle(
-                        color: Color(0xFF3E2723),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[300]!,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Color(0xFF1E88E5),
-                          width: 2,
-                        ),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.person,
-                        color: Color(0xFF1E88E5),
-                        size: 18,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: "Nomor HP",
-                      labelStyle: TextStyle(
-                        color: Color(0xFF3E2723),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[300]!,
-                          width: 1,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Color(0xFF1E88E5),
-                          width: 2,
-                        ),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.phone,
-                        color: Color(0xFF1E88E5),
-                        size: 18,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    style: TextStyle(fontSize: 13, color: Color(0xFF3E2723)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              child: Text(
-                'Batal',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF1E88E5),
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-              onPressed: () {
-                if (_nameController.text.isNotEmpty &&
-                    _phoneController.text.isNotEmpty) {
-                  setState(() {
-                    final index = memberList.indexWhere(
-                      (item) => item["id"] == member["id"],
-                    );
-                    if (index >= 0) {
-                      memberList[index]["name"] = _nameController.text;
-                      memberList[index]["phone"] = _phoneController.text;
-                    }
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Member berhasil diperbarui'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Nama dan nomor HP harus diisi'),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-              child: Text(
-                'Simpan',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-          actionsPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-        );
+      member: member,
+      nameController: _nameController,
+      phoneController: _phoneController,
+      onSave: (name, phone) {
+        setState(() {
+          final index = _memberList.indexWhere(
+            (item) => item["id"] == member["id"],
+          );
+          if (index >= 0) {
+            _memberList[index]["name"] = name;
+            _memberList[index]["phone"] = phone;
+          }
+        });
       },
     );
   }
 
   void _deleteMember(Map<String, dynamic> member) {
-    showDialog(
+    MemberDialogs.showDeleteMemberDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  Icons.delete_outline,
-                  color: Colors.red[600],
-                  size: 18,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Hapus Member',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF3E2723),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          titlePadding: EdgeInsets.fromLTRB(16, 16, 16, 12),
-          contentPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-          content: Padding(
-            padding: EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              'Yakin ingin menghapus member "${member["name"]}"?\n\nTindakan ini tidak dapat dibatalkan.',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
-                height: 1.4,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              child: Text(
-                'Batal',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() {
-                  memberList.removeWhere((item) => item["id"] == member["id"]);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Member ${member["name"]} berhasil dihapus'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: Text(
-                'Hapus',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-          actionsPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-        );
+      member: member,
+      onConfirm: () {
+        setState(() {
+          _memberList.removeWhere((item) => item["id"] == member["id"]);
+        });
       },
     );
   }
 
   List<Map<String, dynamic>> get _filteredMember {
-    return memberList.where((member) {
+    return _memberList.where((member) {
       final matchesSearch =
           member["name"].toString().toLowerCase().contains(
             _searchText.toLowerCase(),
@@ -610,8 +174,6 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isTablet = size.width >= 600;
     final filteredMember = _filteredMember;
 
     return Scaffold(
@@ -624,7 +186,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
         children: [
           // Navbar
           SizedBox(
-            height: 70,
+            height: MemberUIConstants.headerHeight,
             child: NavbarComponent(
               onMenuPressed: _openSidebar,
               onMemberPressed: _openMember,
@@ -633,222 +195,325 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
           // Content
           Expanded(
             child: Container(
-              color: Color.fromARGB(255, 252, 250, 245),
+              color: MemberUIConstants.backgroundColor,
               child: Column(
                 children: [
                   // Header dengan Search & Add Button
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    color: Colors.white,
-                    child: Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Manajemen Member",
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF3E2723),
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              "Total member: ${filteredMember.length}",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(width: 24),
-                        Expanded(
-                          child: SizedBox(
-                            height: 36,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Color.fromARGB(255, 248, 248, 248),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.04),
-                                    blurRadius: 3,
-                                    offset: Offset(0, 2),
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                textAlignVertical: TextAlignVertical.center,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _searchText = value;
-                                  });
-                                },
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: "Cari Member",
-                                  hintStyle: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 11,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 2,
-                                  ),
-                                  suffixIcon: Container(
-                                    margin: EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFF1E88E5),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Icon(
-                                      Icons.search,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF1E88E5),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          onPressed: _addMember,
-                          icon: Icon(Icons.add, color: Colors.white, size: 16),
-                          label: Text(
-                            "Tambah",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildHeader(filteredMember),
                   // Member List
-                  Expanded(
-                    child:
-                        filteredMember.isEmpty
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.people,
-                                    size: 48,
-                                    color: Colors.grey[400],
-                                  ),
-                                  SizedBox(height: 12),
-                                  Text(
-                                    "Tidak ada member",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    "Tambahkan member pertama Anda",
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                            : Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: PaginatedDataTable2(
-                                  wrapInCard: false,
-                                  minWidth: 780,
-                                  columnSpacing: 8,
-                                  horizontalMargin: 8,
-                                  headingRowHeight: 36,
-                                  dataRowHeight: 48,
-                                  rowsPerPage: _rowsPerPage,
-                                  availableRowsPerPage: const [5, 10, 20, 50],
-                                  showFirstLastButtons: true,
-                                  onRowsPerPageChanged: (value) {
-                                    if (value == null) return;
-                                    setState(() {
-                                      _rowsPerPage = value;
-                                    });
-                                  },
-                                  headingTextStyle: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF3E2723),
-                                  ),
-                                  headingRowColor: WidgetStateProperty.all(
-                                    Colors.white,
-                                  ),
-                                  border: TableBorder(
-                                    horizontalInside: BorderSide(
-                                      color: Colors.grey[200]!,
-                                      width: 0.5,
-                                    ),
-                                  ),
-                                  columns: const [
-                                    DataColumn2(
-                                      label: Text('Nama'),
-                                      size: ColumnSize.L,
-                                    ),
-                                    DataColumn2(
-                                      label: Text('No HP'),
-                                      size: ColumnSize.M,
-                                    ),
-                                    DataColumn2(
-                                      label: Text('Poin'),
-                                      size: ColumnSize.S,
-                                      numeric: true,
-                                    ),
-                                    DataColumn2(
-                                      label: Text('Diskon'),
-                                      size: ColumnSize.M,
-                                      numeric: true,
-                                    ),
-                                    DataColumn2(
-                                      label: Text('Aksi'),
-                                      size: ColumnSize.M,
-                                    ),
-                                  ],
-                                  source: _MemberDataSource(
-                                    members: filteredMember,
-                                    context: context,
-                                    onEdit: _editMember,
-                                  ),
-                                ),
-                              ),
-                            ),
-                  ),
+                  Expanded(child: _buildMemberList(filteredMember)),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Build header dengan search dan button tambah
+  Widget _buildHeader(List<Map<String, dynamic>> filteredMember) {
+    return Container(
+      padding: EdgeInsets.all(MemberUIConstants.spacingMedium),
+      color: Colors.white,
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Manajemen Member",
+                style: TextStyle(
+                  fontSize: MemberUIConstants.fontSizeRegular + 1,
+                  fontWeight: FontWeight.bold,
+                  color: MemberUIConstants.textPrimaryColor,
+                ),
+              ),
+              SizedBox(height: MemberUIConstants.spacingXSmall),
+              Text(
+                "Total member: ${filteredMember.length}",
+                style: TextStyle(
+                  fontSize: MemberUIConstants.fontSizeSmall,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(width: MemberUIConstants.spacingLarge),
+          Expanded(
+            child: SizedBox(
+              height: MemberUIConstants.searchBarHeight,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: MemberUIConstants.cardBackground,
+                  borderRadius: BorderRadius.circular(
+                    MemberUIConstants.borderRadiusMedium,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 3,
+                      offset: Offset(0, 2),
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  textAlignVertical: TextAlignVertical.center,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchText = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: "Cari Member",
+                    hintStyle: TextStyle(
+                      color: Colors.grey,
+                      fontSize: MemberUIConstants.fontSizeSmall,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: MemberUIConstants.spacingMedium,
+                      vertical: 2,
+                    ),
+                    suffixIcon: Container(
+                      margin: EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: MemberUIConstants.primaryColor,
+                        borderRadius: BorderRadius.circular(
+                          MemberUIConstants.borderRadiusSmall,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.search,
+                        color: Colors.white,
+                        size: MemberUIConstants.iconSizeSmall,
+                      ),
+                    ),
+                  ),
+                  style: TextStyle(fontSize: MemberUIConstants.fontSizeRegular),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: MemberUIConstants.spacingSmall),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MemberUIConstants.primaryColor,
+              padding: EdgeInsets.symmetric(
+                horizontal: MemberUIConstants.spacingMedium,
+                vertical: MemberUIConstants.spacingSmall,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  MemberUIConstants.borderRadiusSmall,
+                ),
+              ),
+            ),
+            onPressed: _addMember,
+            icon: Icon(
+              Icons.add,
+              color: Colors.white,
+              size: MemberUIConstants.iconSizeSmall,
+            ),
+            label: Text(
+              "Tambah",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: MemberUIConstants.fontSizeSmall,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build member list widget
+  Widget _buildMemberList(List<Map<String, dynamic>> filteredMember) {
+    if (_isLoadingMembers) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                MemberUIConstants.primaryColor,
+              ),
+            ),
+            SizedBox(height: MemberUIConstants.spacingMedium),
+            Text(
+              "Memuat data member...",
+              style: TextStyle(
+                fontSize: MemberUIConstants.fontSizeSmall,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: MemberUIConstants.iconSizeLarge,
+              color: Colors.red[400],
+            ),
+            SizedBox(height: MemberUIConstants.spacingMedium),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: MemberUIConstants.fontSizeSmall,
+                color: Colors.grey[600],
+              ),
+            ),
+            SizedBox(height: MemberUIConstants.spacingMedium),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MemberUIConstants.primaryColor,
+                padding: EdgeInsets.symmetric(
+                  horizontal: MemberUIConstants.spacingMedium,
+                  vertical: MemberUIConstants.spacingSmall,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    MemberUIConstants.borderRadiusSmall,
+                  ),
+                ),
+              ),
+              onPressed: _loadMembers,
+              child: Text(
+                "Coba Lagi",
+                style: TextStyle(
+                  fontSize: MemberUIConstants.fontSizeSmall,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (filteredMember.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people,
+              size: MemberUIConstants.iconSizeLarge,
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: MemberUIConstants.spacingMedium),
+            Text(
+              "Tidak ada member",
+              style: TextStyle(
+                fontSize: MemberUIConstants.fontSizeMedium,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: MemberUIConstants.spacingSmall),
+            Text(
+              "Tambahkan member pertama Anda",
+              style: TextStyle(
+                fontSize: MemberUIConstants.fontSizeSmall,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          MemberUIConstants.borderRadiusSmall,
+        ),
+        child: PaginatedDataTable2(
+          wrapInCard: false,
+          minWidth: MemberUIConstants.dialogMinWidth,
+          columnSpacing: MemberUIConstants.spacingSmall,
+          horizontalMargin: MemberUIConstants.spacingMedium,
+          headingRowHeight: MemberUIConstants.headingRowHeight,
+          dataRowHeight: MemberUIConstants.dataRowHeight,
+          rowsPerPage: _rowsPerPage,
+          availableRowsPerPage: MemberUIConstants.availableRowsPerPage,
+          showFirstLastButtons: true,
+          onRowsPerPageChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              _rowsPerPage = value;
+            });
+          },
+          headingTextStyle: const TextStyle(
+            fontSize: MemberUIConstants.fontSizeSmall,
+            fontWeight: FontWeight.w700,
+            color: MemberUIConstants.textPrimaryColor,
+          ),
+          headingRowColor: WidgetStateProperty.all(Colors.white),
+          border: TableBorder(
+            horizontalInside: BorderSide(color: Colors.grey[200]!, width: 0.5),
+          ),
+          columns: const [
+            DataColumn2(
+              label: Align(alignment: Alignment.center, child: Text('No')),
+              size: ColumnSize.S,
+              fixedWidth: 50,
+              numeric: true,
+            ),
+            DataColumn2(label: Text('Nama'), size: ColumnSize.L),
+            DataColumn2(
+              label: Text('No HP'),
+              size: ColumnSize.S,
+              fixedWidth: 100,
+            ),
+            DataColumn2(
+              label: Align(
+                alignment: Alignment.centerRight,
+                child: Text('Poin'),
+              ),
+              size: ColumnSize.S,
+              fixedWidth: 70,
+              numeric: true,
+            ),
+            DataColumn2(
+              label: Align(
+                alignment: Alignment.centerRight,
+                child: Text('Diskon'),
+              ),
+              size: ColumnSize.S,
+              fixedWidth: 100,
+              numeric: true,
+            ),
+            DataColumn2(
+              label: Align(
+                alignment: Alignment.centerRight,
+                child: Text('Aksi'),
+              ),
+              size: ColumnSize.S,
+              fixedWidth: 80,
+            ),
+          ],
+          source: MemberDataSource(
+            members: filteredMember,
+            context: context,
+            onEdit: _editMember,
+            onDelete: _deleteMember,
+          ),
+        ),
       ),
     );
   }
@@ -860,152 +525,4 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
     _phoneController.dispose();
     super.dispose();
   }
-}
-
-class _MemberDataSource extends DataTableSource {
-  _MemberDataSource({
-    required this.members,
-    required this.context,
-    required this.onEdit,
-  });
-
-  final List<Map<String, dynamic>> members;
-  final BuildContext context;
-  final void Function(Map<String, dynamic> member) onEdit;
-
-  @override
-  DataRow? getRow(int index) {
-    if (index >= members.length) return null;
-    final member = members[index];
-
-    return DataRow(
-      cells: [
-        DataCell(
-          Text(
-            member["name"],
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF3E2723),
-            ),
-          ),
-        ),
-        DataCell(
-          Text(
-            member["phone"],
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-          ),
-        ),
-        DataCell(
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                "${member["points"]}P",
-                style: TextStyle(
-                  fontSize: 8,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.green[200]!, width: 0.5),
-              ),
-              child: Text(
-                "Rp${member["discount"] * 1000}",
-                style: TextStyle(
-                  fontSize: 8,
-                  color: Colors.green[700],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ),
-        DataCell(
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Tooltip(
-                message: "Ke Transaksi",
-                child: InkWell(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${member["name"]} ditambahkan ke transaksi',
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1E88E5),
-                      borderRadius: BorderRadius.all(Radius.circular(6)),
-                    ),
-                    child: const Icon(
-                      Icons.add_shopping_cart,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Tooltip(
-                message: "Edit",
-                child: InkWell(
-                  onTap: () => onEdit(member),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[600],
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.edit,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  int get rowCount => members.length;
-
-  @override
-  bool get isRowCountApproximate => false;
-
-  @override
-  int get selectedRowCount => 0;
 }

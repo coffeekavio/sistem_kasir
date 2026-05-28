@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kasir/services/member_service.dart';
 
 class PollingService {
   static Timer? _fastTimer;
@@ -42,14 +43,29 @@ class PollingService {
     if (!slowActive) {
       _slowTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
         if (kDebugMode) {
-          print('Memeriksa update kategori di background...');
+          print('Memeriksa update kategori dan member di background...');
         }
 
         Future.delayed(const Duration(seconds: 1), () {
           _onCategorySync?.call();
+          _syncMemberData();
           _onMemberSync?.call();
         });
       });
+    }
+  }
+
+  /// Fetch member data dari API dan update local state
+  static Future<void> _syncMemberData() async {
+    try {
+      await MemberService.fetchMembers();
+      if (kDebugMode) {
+        print('Member data berhasil di-sync dari API');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Gagal sync member data: $e');
+      }
     }
   }
 
