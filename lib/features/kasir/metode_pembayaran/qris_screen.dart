@@ -1,436 +1,238 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:kasir/services/api.dart'; // Sesuaikan path jika berbeda
+import 'package:kasir/services/auth_service.dart';
 
 class QrisScreen extends StatefulWidget {
-  final String? transactionId;
-  final List<Map<String, dynamic>>? items;
-  final int? total;
-  final double? discount;
-  final int? tax;
-  final int? finalTotal;
+  final List<Map<String, dynamic>> cart;
+  final int finalTotal;
+  final String? memberId;
+  final String? voucherId;
+  final int discountAmount;
+  final int voucherDiscountAmount;
 
   const QrisScreen({
-    super.key,
-    this.transactionId,
-    this.items,
-    this.total,
-    this.discount,
-    this.tax,
-    this.finalTotal,
-  });
+    Key? key,
+    required this.cart,
+    required this.finalTotal,
+    this.memberId,
+    this.voucherId,
+    this.discountAmount = 0,
+    this.voucherDiscountAmount = 0,
+  }) : super(key: key);
 
   @override
-  State<QrisScreen> createState() => _QrisScreenState();
+  _QrisScreenState createState() => _QrisScreenState();
 }
 
 class _QrisScreenState extends State<QrisScreen> {
-  bool _isPrinting = false;
+  WebSocketChannel? _channel;
+  bool _isLoading = false;
+  String _statusMessage = "Menyiapkan Tagihan...";
+  String? _transactionId;
+  String? _invoiceUrl;
 
-  void _printReceipt() {
-    setState(() {
-      _isPrinting = true;
-    });
-
-    // Simulasi proses print
-    Future.delayed(Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _isPrinting = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Struk berhasil dicetak!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _generateInvoice();
     });
   }
 
-  void _completePayment() {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Pembayaran QRIS berhasil!'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
+  Future<void> _generateInvoice() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final cafeId = await AuthService.getCafeId();
+      final cashierId = await AuthService.getUserId();
+
+      if (cafeId == null || cafeId.isEmpty) {
+        throw Exception('cafe_id tidak ditemukan. Silakan login ulang.');
+      }
+
+      if (cashierId == null || cashierId.isEmpty) {
+        throw Exception('cashier_id tidak ditemukan. Silakan login ulang.');
+      }
+
+      // 1. Siapkan data sesuai Pydantic Schema di FastAPI Anda
+      List<Map<String, dynamic>> itemsPayload =
+          widget.cart.map((item) {
+            return {
+              "menu_id": item['id'], // Pastikan 'id' menu ada di cart Anda
+              "quantity": item['qty'],
+              "price": item['price'],
+              "item_discount": item['itemDiscount'] ?? 0,
+              "is_manual": false, // Ubah jika ada menu manual
+            };
+          }).toList();
+
+      Map<String, dynamic> payload = {
+        "cafe_id": cafeId,
+        "cashier_id": cashierId,
+        "member_id": widget.memberId,
+        "voucher_id": widget.voucherId,
+        "payment_method": "xendit",
+        "amount_tendered": 0, // Karena bayar online
+        "discount_amount": widget.discountAmount,
+        "voucher_discount_amount": widget.voucherDiscountAmount,
+        "items": itemsPayload,
+      };
+
+      // 2. Tembak API menggunakan class Api buatan Anda
+      final response = await Api.post('/api/transactions/checkout', payload);
+
+      if (response['status'] == 'success') {
+        String invoiceUrl = response['data']['invoice_url'];
+        _transactionId = response['data']['transaction_id'];
+        _invoiceUrl = invoiceUrl;
+
+        if (!mounted) return;
+        setState(() {
+          _statusMessage = "Menunggu Pelanggan Membayar...";
+          _isLoading = false;
+        });
+
+        // 3. Buka link Xendit di Browser Tablet/HP
+        final Uri url = Uri.parse(invoiceUrl);
+        final canOpen = await canLaunchUrl(url);
+        if (!canOpen ||
+            !await launchUrl(url, mode: LaunchMode.externalApplication)) {
+          throw Exception(
+            'Gagal membuka link pembayaran. Salin URL di bawah ini dan buka manual.',
+          );
+        }
+
+        // 4. Mulai dengarkan sinyal Lunas dari WebSocket
+        _listenToWebSocket(_transactionId!);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _statusMessage = "Gagal: ${e.toString()}";
+      });
+    }
+  }
+
+  void _listenToWebSocket(String transactionId) {
+    // GANTI IP DI BAWAH SESUAI DENGAN IP VPS ANDA !
+    final wsUrl = Uri.parse('ws://103.150.92.223:8000/api/ws/updates');
+    _channel = WebSocketChannel.connect(wsUrl);
+
+    _channel!.stream.listen(
+      (message) {
+        if (message == "PAYMENT_SUCCESS_$transactionId") {
+          _tampilkanSukses("Pembayaran Berhasil! ✅");
+        } else if (message == "PAYMENT_EXPIRED_$transactionId") {
+          _tampilkanGagal("Waktu Pembayaran Habis (Expired) ❌");
+        }
+      },
+      onError: (error) {
+        print("WebSocket Error: $error");
+      },
     );
+  }
+
+  void _tampilkanSukses(String pesan) {
+    _channel?.sink.close(); // Tutup koneksi agar hemat memori
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (_) => AlertDialog(
+            title: Text(pesan, style: TextStyle(color: Colors.green)),
+            content: Text("Tagihan telah dibayar lunas via Xendit."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  // Tutup dialog
+                  Navigator.pop(context);
+                  // Tutup layar QRIS & kembali ke layar awal (bersihkan keranjang)
+                  Navigator.pop(context, true);
+                },
+                child: Text("Cetak Struk & Selesai"),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _tampilkanGagal(String pesan) {
+    _channel?.sink.close();
+    if (!mounted) return;
+    setState(() => _statusMessage = pesan);
+  }
+
+  Future<void> _copyInvoiceUrl() async {
+    final url = _invoiceUrl;
+    if (url == null || url.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Link pembayaran disalin')));
+  }
+
+  @override
+  void dispose() {
+    _channel?.sink.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final dateFormatter = DateFormat('dd/MM/yyyy HH:mm:ss');
-
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF3E2723),
-        elevation: 0,
-        title: Text(
-          'Pembayaran QRIS',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: Container(
-        color: Color.fromARGB(255, 252, 250, 245),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Card untuk QRIS
-                  Container(
-                    padding: EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
+      appBar: AppBar(title: Text("Pembayaran QRIS / Online")),
+      body: Center(
+        child:
+            _isLoading
+                ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(_statusMessage, style: TextStyle(fontSize: 16)),
+                  ],
+                )
+                : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.qr_code_scanner, size: 100, color: Colors.blue),
+                    SizedBox(height: 16),
+                    Text(
+                      _statusMessage,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    child: Column(
-                      children: [
-                        // Header
-                        Text(
-                          'Scan QRIS',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF3E2723),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        // QRIS Image / Placeholder
-                        Container(
-                          width: 280,
-                          height: 280,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Color(0xFF1E88E5),
-                              width: 2,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.qr_code_2,
-                                size: 120,
-                                color: Color(0xFF1E88E5),
-                              ),
-                              SizedBox(height: 12),
-                              Text(
-                                'QR Code QRIS',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        // Divider
-                        Divider(color: Colors.grey[300]),
-                        SizedBox(height: 16),
-                        // Detail Pesanan
-                        Column(
-                          children: [
-                            // Transaction ID
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'ID Transaksi',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  widget.transactionId ?? 'TRX001',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12),
-                            // Date & Time
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Tanggal & Waktu',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  dateFormatter.format(now),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12),
-                            // Items Count
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Jumlah Item',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  '${widget.items?.length ?? 0} item',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16),
-                        // Divider
-                        Divider(color: Colors.grey[300]),
-                        SizedBox(height: 16),
-                        // Detail Pembayaran
-                        Column(
-                          children: [
-                            // Subtotal
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Subtotal',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  'Rp ${widget.total ?? 0}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 10),
-                            // Discount
-                            if (widget.discount != null && widget.discount! > 0)
-                              Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Diskon (${widget.discount?.toStringAsFixed(0)}%)',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      Text(
-                                        '-Rp ${((widget.total ?? 0) * (widget.discount ?? 0) / 100).toStringAsFixed(0)}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 10),
-                                ],
-                              ),
-                            // Tax
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Pajak (1.5%)',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  'Rp ${widget.tax ?? 0}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 14),
-                            Divider(color: Colors.grey[300]),
-                            SizedBox(height: 14),
-                            // Total (Highlighted)
-                            Container(
-                              padding: EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Color(0xFF1E88E5).withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Total Pembayaran',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Rp ${widget.finalTotal ?? 0}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Color(0xFF1E88E5),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 24),
-                        // Metode Pembayaran
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Color(0xFF1E88E5).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.qr_code_2,
-                                color: Color(0xFF1E88E5),
-                                size: 20,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Metode: QRIS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                  color: Color(0xFF1E88E5),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    SizedBox(height: 30),
+                    ElevatedButton(
+                      onPressed:
+                          _transactionId == null ? _generateInvoice : null,
+                      child: Text("Coba Buat Tagihan Lagi"),
                     ),
-                  ),
-                  SizedBox(height: 24),
-                  // Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Print Button
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[200],
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: _isPrinting ? null : _printReceipt,
-                        icon: Icon(
-                          Icons.print,
-                          color: Colors.grey[700],
-                          size: 20,
-                        ),
-                        label: Text(
-                          _isPrinting ? 'Sedang cetak...' : 'Cetak Struk',
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                    if (_invoiceUrl != null) ...[
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: SelectableText(
+                          _invoiceUrl!,
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                      SizedBox(width: 12),
-                      // Confirm Button
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1E88E5),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: _completePayment,
-                        icon: Icon(
-                          Icons.check_circle,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        label: Text(
-                          'Selesai',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: _copyInvoiceUrl,
+                        child: const Text('Salin Link Pembayaran'),
                       ),
                     ],
-                  ),
-                  SizedBox(height: 16),
-                  // Info Text
-                  Text(
-                    'Silahkan scan kode QRIS dengan aplikasi mobile banking Anda',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+                  ],
+                ),
       ),
     );
   }

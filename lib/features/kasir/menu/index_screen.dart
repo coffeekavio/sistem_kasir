@@ -385,9 +385,9 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                         padding: EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(context);
-                        _processPayment('Tunai');
+                        await _processPayment('Tunai');
                       },
                       icon: Icon(Icons.money, color: Colors.white, size: 22),
                       label: Text(
@@ -412,9 +412,9 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                         padding: EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(context);
-                        _processPayment('QRIS');
+                        await _processPayment('QRIS');
                       },
                       icon: Icon(
                         Icons.qr_code_2,
@@ -561,39 +561,27 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  void _processPayment(String method) {
+  Future<void> _processPayment(String method) async {
     if (method == 'QRIS') {
-      // Generate transaction ID
-      String transactionId =
-          'TRX${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-
-      // Navigate to QRIS Screen
-      Navigator.push(
+      final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder:
-              (context) => QrisScreen(
-                transactionId: transactionId,
-                items: _cart,
-                total: _total,
-                discount: _discountPercent,
-                tax: _tax,
-                finalTotal: _finalTotal,
-              ),
+              (context) => QrisScreen(cart: _cart, finalTotal: _finalTotal),
         ),
       );
-    } else if (method == 'Tunai') {
-      // Generate transaction ID
-      String transactionId =
-          'TRX${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
-      // Navigate to Cash Screen
-      Navigator.push(
+      if (result == true) {
+        _clearCart();
+      }
+    } else if (method == 'Tunai') {
+      final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder:
               (context) => CashScreen(
-                transactionId: transactionId,
+                transactionId:
+                    'TRX${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
                 items: _cart,
                 total: _total,
                 discount: _discountPercent,
@@ -602,6 +590,10 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
         ),
       );
+
+      if (result == true) {
+        _clearCart();
+      }
     }
   }
 

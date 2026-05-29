@@ -63,6 +63,9 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('username', username);
       await prefs.setString('user_role', user['role']);
+      if (user['id'] != null) {
+        await prefs.setString('user_id', user['id'].toString());
+      }
       if (user['cafe_id'] != null) {
         await prefs.setString('cafe_id', user['cafe_id']);
       }
@@ -80,6 +83,7 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('username');
       await prefs.remove('user_role');
+      await prefs.remove('user_id');
       await prefs.remove('cafe_id');
     } catch (e) {
       throw ApiException('Logout gagal: $e');
@@ -111,5 +115,10 @@ class AuthService {
   static Future<String?> getCafeId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('cafe_id');
+  }
+
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id');
   }
 }

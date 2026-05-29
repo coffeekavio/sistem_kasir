@@ -83,7 +83,7 @@ class _CashScreenState extends State<CashScreen> {
       return;
     }
 
-    Navigator.pop(context);
+    Navigator.pop(context, true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Pembayaran Tunai berhasil!'),
