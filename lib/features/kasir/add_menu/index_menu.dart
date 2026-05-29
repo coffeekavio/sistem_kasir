@@ -201,15 +201,26 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
   }
 
   List<Map<String, dynamic>> get _filteredMenu {
-    return _menuList.where((menu) {
-      final matchesSearch = menu["name"].toString().toLowerCase().contains(
-        _searchText.toLowerCase(),
-      );
-      final matchesCategory =
-          _selectedCategory == "Semua" ||
-          _menuCategoryLabel(menu) == _selectedCategory;
-      return matchesSearch && matchesCategory;
-    }).toList();
+    final filtered =
+        _menuList.where((menu) {
+          final matchesSearch = menu["name"].toString().toLowerCase().contains(
+            _searchText.toLowerCase(),
+          );
+          final matchesCategory =
+              _selectedCategory == "Semua" ||
+              _menuCategoryLabel(menu) == _selectedCategory;
+          return matchesSearch && matchesCategory;
+        }).toList();
+
+    // Sort: aktif dulu, tidak aktif di bawah
+    filtered.sort((a, b) {
+      final aIsAvailable = a['is_available'] ?? true;
+      final bIsAvailable = b['is_available'] ?? true;
+      if (aIsAvailable == bIsAvailable) return 0;
+      return aIsAvailable ? -1 : 1;
+    });
+
+    return filtered;
   }
 
   @override
@@ -671,6 +682,16 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
               fixedWidth: 140,
               numeric: true,
             ),
+            DataColumn2(
+              label: Align(alignment: Alignment.center, child: Text('Status')),
+              size: ColumnSize.S,
+              fixedWidth: 100,
+            ),
+            DataColumn2(
+              label: Align(alignment: Alignment.center, child: Text('Favorit')),
+              size: ColumnSize.S,
+              fixedWidth: 80,
+            ),
           ],
           source: _MenuDataSource(menus: filteredMenu),
         ),
@@ -739,15 +760,59 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
                     // Nama Item
                     Expanded(
                       flex: 2,
-                      child: Text(
-                        menu["name"],
-                        style: TextStyle(
-                          fontSize: isMobile ? 13 : 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF3E2723),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            menu["name"],
+                            style: TextStyle(
+                              fontSize: isMobile ? 13 : 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF3E2723),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (menu['is_available'] ?? true)
+                                          ? Color(0xFFE8F5E9)
+                                          : Color(0xFFFFEBEE),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                                child: Text(
+                                  (menu['is_available'] ?? true)
+                                      ? 'Aktif'
+                                      : 'Tidak Aktif',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        (menu['is_available'] ?? true)
+                                            ? Color(0xFF2E7D32)
+                                            : Color(0xFFC62828),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              if (menu['is_favorite'] ?? false)
+                                Icon(
+                                  Icons.star,
+                                  color: Color(0xFFFBC02D),
+                                  size: 14,
+                                ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(width: 12),
@@ -888,6 +953,43 @@ class _MenuDataSource extends DataTableSource {
                 color: Color(0xFF1E88E5),
               ),
             ),
+          ),
+        ),
+        DataCell(
+          Center(
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color:
+                    (menu['is_available'] ?? true)
+                        ? Color(0xFFE8F5E9)
+                        : Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                (menu['is_available'] ?? true) ? 'Aktif' : 'Tidak Aktif',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color:
+                      (menu['is_available'] ?? true)
+                          ? Color(0xFF2E7D32)
+                          : Color(0xFFC62828),
+                ),
+              ),
+            ),
+          ),
+        ),
+        DataCell(
+          Center(
+            child:
+                (menu['is_favorite'] ?? false)
+                    ? Icon(Icons.star, color: Color(0xFFFBC02D), size: 18)
+                    : Icon(
+                      Icons.star_outline,
+                      color: Colors.grey[400],
+                      size: 18,
+                    ),
           ),
         ),
       ],

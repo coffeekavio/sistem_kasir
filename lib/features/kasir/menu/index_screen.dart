@@ -173,7 +173,11 @@ class _MenuScreenState extends State<MenuScreen> {
 
       if (_selectedSection == 'Favorit') {
         final isFav =
-            item['isFav'] ?? item['is_fav'] ?? item['favorite'] ?? false;
+            item['isFav'] ??
+            item['is_fav'] ??
+            item['is_favorite'] ??
+            item['favorite'] ??
+            false;
         if (!(isFav == true || isFav.toString() == 'true')) return false;
       }
 
