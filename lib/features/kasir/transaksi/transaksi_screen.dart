@@ -114,7 +114,6 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: SidebarComponent(
-        userRole: _userRole,
         onLogoutPressed: _handleLogout,
       ),
       body: Column(

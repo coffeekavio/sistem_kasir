@@ -5,7 +5,6 @@ import 'package:kasir/features/kasir/menu/index_screen.dart';
 import 'package:kasir/features/kasir/add_menu/index_menu.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
 import 'package:kasir/features/kasir/transaksi/transaksi_screen.dart';
-import 'package:kasir/features/supervisor/dashboard/index.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kasir/features/kasir/category/index_category.dart';
@@ -39,7 +38,7 @@ class MainApp extends StatelessWidget {
         routes: {
           '/login': (context) => const LoginScreen(),
           '/menu': (context) => const MenuScreen(),
-          '/dashboard': (context) => const DashboardScreen(),
+          // dashboard removed (kasir-only app)
           '/index_menu': (context) => const IndexMenuScreen(),
           '/index_member': (context) => const IndexMemberScreen(),
           '/transaksi': (context) => const TransaksiScreen(),

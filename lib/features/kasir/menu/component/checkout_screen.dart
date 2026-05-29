@@ -43,27 +43,80 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  late TextEditingController _discountController;
   late TextEditingController _customerNameController;
   List<Map<String, dynamic>> _memberSuggestions = [];
   bool _isSearchingMembers = false;
 
+  // Voucher & Discount state
+  double _memberDiscount = 0;
+  Map<String, dynamic>? _selectedVoucher;
+
+  // Format rupiah Indonesia tanpa desimal, misalnya: Rp40.000
+  String _formatCurrency(num value) {
+    final isNegative = value < 0;
+    final integerPart = value.abs().round();
+
+    final integerStr = integerPart.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => '.',
+    );
+    return '${isNegative ? '-' : ''}Rp$integerStr';
+  }
+
+  List<Map<String, dynamic>> _availableVouchers = [
+    {'id': 1, 'name': 'Voucher 10%', 'discount': 10.0, 'type': 'percent'},
+    {'id': 2, 'name': 'Voucher 15%', 'discount': 15.0, 'type': 'percent'},
+    {
+      'id': 3,
+      'name': 'Voucher Rp 50.000',
+      'discount': 50000.0,
+      'type': 'fixed',
+    },
+    {'id': 4, 'name': 'Voucher 20%', 'discount': 20.0, 'type': 'percent'},
+  ];
+
   @override
   void initState() {
     super.initState();
-    _discountController = TextEditingController(
-      text: widget.discountPercent.toString(),
-    );
     _customerNameController = TextEditingController(
       text: widget.customerName ?? '',
     );
+    _memberDiscount = widget.discountPercent;
   }
 
   @override
   void dispose() {
-    _discountController.dispose();
     _customerNameController.dispose();
     super.dispose();
+  }
+
+  void _clearAllCart() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text(
+              'Apakah Anda yakin ingin menghapus semua item dari keranjang?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Clear cart items
+                  for (int i = widget.cart.length - 1; i >= 0; i--) {
+                    widget.onRemoveFromCart(i);
+                  }
+                },
+                child: Text('Hapus', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+    );
   }
 
   @override
@@ -139,7 +192,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               widget.onCustomerNameChanged(
                                 selection['name'] ?? '',
                               );
-                              setState(() {});
+                              setState(() {
+                                _memberDiscount =
+                                    (selection['discount'] as num?)
+                                        ?.toDouble() ??
+                                    0;
+                              });
                             },
                             fieldViewBuilder: (
                               context,
@@ -391,7 +449,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                           top: 2,
                                                         ),
                                                     child: Text(
-                                                      "Diskon: -Rp$itemDiscount",
+                                                      "Diskon: -${_formatCurrency(itemDiscount)}",
                                                       style: TextStyle(
                                                         fontWeight:
                                                             FontWeight.w600,
@@ -502,7 +560,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                               children: [
                                                 Expanded(
                                                   child: Text(
-                                                    "Rp$itemTotal",
+                                                    _formatCurrency(itemTotal),
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.w600,
@@ -573,7 +631,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ),
                       Text(
-                        "Rp ${widget.finalTotal}",
+                        _formatCurrency(widget.finalTotal),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
@@ -583,42 +641,76 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ],
                   ),
                   // Discount (kanan)
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        "Discount (%)",
+                        "Discount Member",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 10,
+                          fontSize: 9,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      SizedBox(
-                        width: 40,
-                        height: 25,
-                        child: TextField(
-                          controller: _discountController,
-                          onChanged: (value) {
-                            widget.onDiscountChanged(
-                              double.tryParse(value) ?? 0,
-                            );
-                          },
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(4),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                          ),
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(fontSize: 12),
+                      Text(
+                        "${_memberDiscount.toStringAsFixed(1)}%",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          color: Color(0xFF1E88E5),
                         ),
                       ),
                     ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              // Voucher Dropdown
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Voucher Diskon",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 9),
+                  ),
+                  SizedBox(height: 3),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: DropdownButton<Map<String, dynamic>>(
+                      value: _selectedVoucher,
+                      hint: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          "Pilih voucher",
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ),
+                      isExpanded: true,
+                      underline: SizedBox(),
+                      items:
+                          _availableVouchers.map((voucher) {
+                            return DropdownMenuItem<Map<String, dynamic>>(
+                              value: voucher,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  voucher['name'],
+                                  style: TextStyle(fontSize: 9),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                      onChanged: (Map<String, dynamic>? value) {
+                        setState(() {
+                          _selectedVoucher = value;
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -626,6 +718,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               // Buttons
               Row(
                 children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: widget.cart.isEmpty ? null : _clearAllCart,
+                      child: Text(
+                        "Clear All",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(

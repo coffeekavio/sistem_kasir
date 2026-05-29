@@ -47,7 +47,8 @@ class AuthService {
       }
 
       final user = response['user'];
-      final allowedRoles = ['manager', 'supervisor', 'kasir'];
+      // Hanya izinkan role 'kasir' untuk aplikasi ini
+      final allowedRoles = ['kasir'];
 
       if (!allowedRoles.contains(user['role'])) {
         throw ApiException('Role akun Anda tidak dikenali oleh sistem.');

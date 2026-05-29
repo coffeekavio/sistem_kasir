@@ -19,7 +19,6 @@ class IndexMenuScreen extends StatefulWidget {
 class _IndexMenuScreenState extends State<IndexMenuScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
-  String? _userRole;
   List<Map<String, dynamic>> _menuList = [];
   List<String> _categories = ['Semua'];
   Map<String, String> _categoryNameById = {};
@@ -30,7 +29,6 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserRole();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _attachProviders();
       _loadMenuAndCategories();
@@ -85,17 +83,6 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
         );
       },
     );
-  }
-
-  Future<void> _loadUserRole() async {
-    try {
-      final role = await AuthService.getUserRole();
-      setState(() {
-        _userRole = role;
-      });
-    } catch (e) {
-      print('Error loading user role: $e');
-    }
   }
 
   Future<void> _handleLogout() async {
@@ -230,10 +217,7 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: SidebarComponent(
-        userRole: _userRole,
-        onLogoutPressed: _handleLogout,
-      ),
+      drawer: SidebarComponent(onLogoutPressed: _handleLogout),
       body: Column(
         children: [
           // Navbar
@@ -348,35 +332,6 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
                             ),
                           ),
                         ),
-                        if (_userRole == "supervisor") SizedBox(width: 10),
-                        if (_userRole == "supervisor")
-                          SizedBox(
-                            height: 36,
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF1E88E5),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Buka form tambah menu'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                                // TODO: Navigate to add menu page
-                              },
-                              icon: Icon(Icons.add, size: 16),
-                              label: Text(
-                                'Tambah Menu',
-                                style: TextStyle(fontSize: 11),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ],
@@ -484,31 +439,6 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
                       ),
                     ],
                   ),
-                  if (_userRole == "supervisor")
-                    SizedBox(
-                      height: 36,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1E88E5),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          padding: EdgeInsets.symmetric(horizontal: 10),
-                        ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Buka form tambah menu'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                          // TODO: Navigate to add menu page
-                        },
-                        icon: Icon(Icons.add, size: 16),
-                        label: Text('Tambah', style: TextStyle(fontSize: 11)),
-                      ),
-                    ),
                 ],
               ),
               SizedBox(height: 12),
@@ -831,59 +761,53 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
                     ),
                     SizedBox(width: 12),
                     // Kategori
-                    if (_userRole == "supervisor")
-                      SizedBox(
-                        width: 32, // Lebar container
-                        height: 32, // Tinggi container
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: Colors.blue[200]!,
-                              width: 1,
-                            ),
-                          ),
-                          child: IconButton(
-                            icon: Icon(Icons.edit, size: 16),
-                            color: Colors.blue[600],
-                            onPressed: () => _editMenu(menu),
-                            constraints: BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
-                            ),
-                            padding: EdgeInsets.zero,
-                            tooltip: 'Edit Menu',
+                    SizedBox(
+                      width: 32, // Lebar container
+                      height: 32, // Tinggi container
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.blue[200]!,
+                            width: 1,
                           ),
                         ),
-                      ),
-                    if (_userRole == "supervisor") SizedBox(width: 6),
-                    if (_userRole == "supervisor")
-                      SizedBox(
-                        width: 32, // Lebar container
-                        height: 32, // Tinggi container
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red[50],
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: Colors.red[200]!,
-                              width: 1,
-                            ),
+                        child: IconButton(
+                          icon: Icon(Icons.edit, size: 16),
+                          color: Colors.blue[600],
+                          onPressed: () => _editMenu(menu),
+                          constraints: BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
                           ),
-                          child: IconButton(
-                            icon: Icon(Icons.delete, size: 16),
-                            color: Colors.red[600],
-                            onPressed: () => _deleteMenu(menu),
-                            constraints: BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
-                            ),
-                            padding: EdgeInsets.zero,
-                            tooltip: 'Hapus Menu',
-                          ),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Edit Menu',
                         ),
                       ),
+                    ),
+                    SizedBox(
+                      width: 32, // Lebar container
+                      height: 32, // Tinggi container
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.red[200]!, width: 1),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.delete, size: 16),
+                          color: Colors.red[600],
+                          onPressed: () => _deleteMenu(menu),
+                          constraints: BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Hapus Menu',
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

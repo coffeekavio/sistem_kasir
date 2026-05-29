@@ -47,13 +47,11 @@ class _NavbarComponentState extends State<NavbarComponent> {
   }
 
   double _getVerticalPadding() {
-    bool isSupervisor = _userRole == 'supervisor';
-    return isSupervisor ? 35 : 12;
+    return 12;
   }
 
   double _getBottomPadding() {
-    bool isSupervisor = _userRole == 'supervisor';
-    return isSupervisor ? 15 : 0;
+    return 0;
   }
 
   @override
@@ -77,7 +75,7 @@ class _NavbarComponentState extends State<NavbarComponent> {
       );
     }
 
-    bool isKasir = _userRole == 'kasir';
+    bool isKasir = _userRole != null; // Always treat as kasir
     bool isSupervisor = _userRole == 'supervisor';
 
     return Container(
@@ -116,19 +114,6 @@ class _NavbarComponentState extends State<NavbarComponent> {
               ),
             ),
             SizedBox(width: 16),
-          ] else if (isSupervisor) ...[
-            // Hamburger menu
-            IconButton(
-              icon: Icon(Icons.menu, size: 30, color: Color(0xFF3E2723)),
-              onPressed: widget.onMenuPressed,
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            Spacer(),
           ],
           // User info
           Row(

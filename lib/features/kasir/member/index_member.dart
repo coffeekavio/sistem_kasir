@@ -179,7 +179,6 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: SidebarComponent(
-        userRole: _userRole,
         onLogoutPressed: _handleLogout,
       ),
       body: Column(

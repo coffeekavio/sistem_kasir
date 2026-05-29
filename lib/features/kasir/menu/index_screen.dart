@@ -33,14 +33,12 @@ class _MenuScreenState extends State<MenuScreen> {
   Map<String, String> _categoryNameById = {};
   String _selectedSection = "Produk"; // Manual, Produk, Favorit
   double _discountPercent = 0;
-  String? _userRole;
   MenuProvider? _menuProvider;
   KategoriProvider? _kategoriProvider;
 
   @override
   void initState() {
     super.initState();
-    _loadUserRole();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _attachProviders();
       _loadMenus();
@@ -91,17 +89,6 @@ class _MenuScreenState extends State<MenuScreen> {
     PollingService.stop();
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadUserRole() async {
-    try {
-      final role = await AuthService.getUserRole();
-      setState(() {
-        _userRole = role;
-      });
-    } catch (e) {
-      print('Error loading user role: $e');
-    }
   }
 
   Future<void> _loadMenus() async {
@@ -166,6 +153,10 @@ class _MenuScreenState extends State<MenuScreen> {
     List<Map<String, dynamic>> menus,
   ) {
     return menus.where((item) {
+      // Filter: hanya tampilkan menu yang aktif (is_available: true)
+      final isAvailable = item['is_available'] ?? true;
+      if (!isAvailable) return false;
+
       if (_selectedCategory.toLowerCase() != 'all') {
         final itemCat = _menuCategoryLabel(item).toLowerCase();
         if (itemCat != _selectedCategory.toLowerCase()) return false;
@@ -612,10 +603,8 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      drawer: SidebarComponent(
-        userRole: _userRole,
-        onLogoutPressed: _handleLogout,
-      ),
+      resizeToAvoidBottomInset: false,
+      drawer: SidebarComponent(onLogoutPressed: _handleLogout),
       body: Column(
         children: [
           // Navbar di atas

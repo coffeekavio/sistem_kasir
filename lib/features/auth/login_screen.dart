@@ -42,16 +42,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        // Tentukan route berdasarkan role user
-        String route = '/menu'; // Default untuk kasir
-
-        if (user.role == 'supervisor') {
-          route = '/dashboard';
-        } else if (user.role == 'manager') {
-          route = '/dashboard';
-        }
-
-        Navigator.of(context).pushReplacementNamed(route);
+        // Aplikasi hanya untuk kasir — selalu arahkan ke menu
+        Navigator.of(context).pushReplacementNamed('/menu');
       }
     } on ApiException catch (e) {
       setState(() {
