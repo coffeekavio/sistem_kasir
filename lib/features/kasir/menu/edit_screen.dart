@@ -4,11 +4,13 @@ class EditPesananScreen extends StatefulWidget {
   final Map<String, dynamic> item;
   final int cartIndex;
   final Function(Map<String, dynamic>) onSave;
+  final VoidCallback? onDelete;
 
   const EditPesananScreen({
     required this.item,
     required this.cartIndex,
     required this.onSave,
+    this.onDelete,
     super.key,
   });
 
@@ -457,6 +459,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                           padding: EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: () {
+                          widget.onDelete?.call();
                           Navigator.pop(context);
                         },
                         icon: Icon(Icons.delete, size: 16, color: Colors.white),

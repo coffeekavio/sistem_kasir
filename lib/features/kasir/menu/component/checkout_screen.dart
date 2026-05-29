@@ -3,6 +3,7 @@ import 'package:kasir/features/kasir/metode_pembayaran/qris_screen.dart';
 import 'package:kasir/features/kasir/metode_pembayaran/cash_screen.dart';
 import 'package:kasir/features/kasir/menu/edit_screen.dart';
 import 'package:kasir/services/member_service.dart';
+import 'package:kasir/services/voucher_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
@@ -48,10 +49,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   late TextEditingController _customerNameController;
   List<Map<String, dynamic>> _memberSuggestions = [];
   bool _isSearchingMembers = false;
+  bool _isLoadingVouchers = false;
+  String? _voucherError;
 
   // Voucher & Discount state
   double _memberDiscount = 0;
   Map<String, dynamic>? _selectedVoucher;
+  List<Map<String, dynamic>> _availableVouchers = [];
 
   // Format rupiah Indonesia tanpa desimal, misalnya: Rp40.000
   String _formatCurrency(num value) {
@@ -65,18 +69,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return '${isNegative ? '-' : ''}Rp$integerStr';
   }
 
-  List<Map<String, dynamic>> _availableVouchers = [
-    {'id': 1, 'name': 'Voucher 10%', 'discount': 10.0, 'type': 'percent'},
-    {'id': 2, 'name': 'Voucher 15%', 'discount': 15.0, 'type': 'percent'},
-    {
-      'id': 3,
-      'name': 'Voucher Rp 50.000',
-      'discount': 50000.0,
-      'type': 'fixed',
-    },
-    {'id': 4, 'name': 'Voucher 20%', 'discount': 20.0, 'type': 'percent'},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -84,6 +76,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       text: widget.customerName ?? '',
     );
     _memberDiscount = widget.discountPercent;
+    _loadVouchers();
   }
 
   @override
@@ -116,6 +109,39 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ],
           ),
     );
+  }
+
+  Future<void> _loadVouchers() async {
+    setState(() {
+      _isLoadingVouchers = true;
+      _voucherError = null;
+    });
+
+    try {
+      final vouchers = await VoucherService.fetchActiveVouchers();
+      if (!mounted) return;
+
+      setState(() {
+        _availableVouchers = vouchers;
+        _selectedVoucher =
+            _availableVouchers.any((voucher) => voucher == _selectedVoucher)
+                ? _selectedVoucher
+                : null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _voucherError = e.toString();
+        _availableVouchers = [];
+        _selectedVoucher = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingVouchers = false;
+        });
+      }
+    }
   }
 
   @override
@@ -407,6 +433,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                     updatedItem,
                                                   );
                                                 },
+                                                onDelete: () {
+                                                  widget.onRemoveFromCart(
+                                                    index,
+                                                  );
+                                                },
                                               ),
                                         ),
                                       );
@@ -677,40 +708,90 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       border: Border.all(color: Colors.grey[300]!),
                       borderRadius: BorderRadius.circular(5),
                     ),
-                    child: DropdownButton<Map<String, dynamic>>(
-                      value: _selectedVoucher,
-                      hint: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          "Pilih voucher",
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.grey[500],
-                          ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<Map<String, dynamic>>(
+                        value:
+                            _availableVouchers.contains(_selectedVoucher)
+                                ? _selectedVoucher
+                                : null,
+                        hint: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child:
+                              _isLoadingVouchers
+                                  ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 12,
+                                        height: 12,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "Memuat voucher...",
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: Colors.grey[500],
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                  : Text(
+                                    _voucherError != null
+                                        ? "Voucher gagal dimuat"
+                                        : "Pilih voucher",
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color:
+                                          _voucherError != null
+                                              ? Colors.red[400]
+                                              : Colors.grey[500],
+                                    ),
+                                  ),
                         ),
-                      ),
-                      isExpanded: true,
-                      underline: SizedBox(),
-                      items:
-                          _availableVouchers.map((voucher) {
-                            return DropdownMenuItem<Map<String, dynamic>>(
-                              value: voucher,
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8),
-                                child: Text(
-                                  voucher['name'],
-                                  style: TextStyle(fontSize: 9),
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        items:
+                            _availableVouchers.map((voucher) {
+                              final name = (voucher['name'] ?? '').toString();
+                              final discount =
+                                  voucher['discount_percentage'] ??
+                                  voucher['discount'] ??
+                                  '';
+
+                              return DropdownMenuItem<Map<String, dynamic>>(
+                                value: voucher,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  child: Text(
+                                    name.isEmpty
+                                        ? 'Voucher'
+                                        : '$name - ${discount.toString()}%',
+                                    style: const TextStyle(fontSize: 9),
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
-                      onChanged: (Map<String, dynamic>? value) {
-                        setState(() {
-                          _selectedVoucher = value;
-                        });
-                      },
+                              );
+                            }).toList(),
+                        onChanged: (Map<String, dynamic>? value) {
+                          setState(() {
+                            _selectedVoucher = value;
+                          });
+                        },
+                      ),
                     ),
                   ),
+                  if (_voucherError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Gagal memuat voucher dari server.',
+                        style: TextStyle(fontSize: 8, color: Colors.red[400]),
+                      ),
+                    ),
                 ],
               ),
               SizedBox(height: 12),
