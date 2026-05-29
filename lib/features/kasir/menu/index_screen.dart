@@ -309,6 +309,12 @@ class _MenuScreenState extends State<MenuScreen> {
     });
   }
 
+  void _clearCart() {
+    setState(() {
+      _cart.clear();
+    });
+  }
+
   void _updateCartItem(int index, Map<String, dynamic> updatedItem) {
     setState(() {
       _cart[index] = updatedItem;
@@ -876,6 +882,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   discountPercent: _discountPercent,
                   onAddCustomer: _showAddCustomerDialog,
                   onRemoveFromCart: _removeFromCart,
+                  onClearCart: _clearCart,
                   onAddToCart: _addToCart,
                   onDiscountChanged: (value) {
                     setState(() {

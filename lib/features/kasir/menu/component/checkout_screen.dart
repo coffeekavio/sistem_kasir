@@ -10,6 +10,7 @@ class CheckoutScreen extends StatefulWidget {
   final double discountPercent;
   final VoidCallback onAddCustomer;
   final Function(int) onRemoveFromCart;
+  final VoidCallback onClearCart;
   final Function(Map<String, String>) onAddToCart;
   final Function(double) onDiscountChanged;
   final int total;
@@ -27,6 +28,7 @@ class CheckoutScreen extends StatefulWidget {
     required this.discountPercent,
     required this.onAddCustomer,
     required this.onRemoveFromCart,
+    required this.onClearCart,
     required this.onAddToCart,
     required this.onDiscountChanged,
     required this.total,
@@ -107,10 +109,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Clear cart items
-                  for (int i = widget.cart.length - 1; i >= 0; i--) {
-                    widget.onRemoveFromCart(i);
-                  }
+                  widget.onClearCart();
                 },
                 child: Text('Hapus', style: TextStyle(color: Colors.red)),
               ),
