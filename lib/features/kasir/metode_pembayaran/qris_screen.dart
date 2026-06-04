@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:kasir/services/api.dart'; // Sesuaikan path jika berbeda
-import 'package:kasir/services/auth_service.dart';
 
 class QrisScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
@@ -32,211 +27,305 @@ class QrisScreen extends StatefulWidget {
 }
 
 class _QrisScreenState extends State<QrisScreen> {
-  WebSocketChannel? _channel;
-  bool _isLoading = false;
-  String _statusMessage = "Menyiapkan Tagihan...";
-  String? _transactionId;
-  String? _invoiceUrl;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _generateInvoice();
-    });
   }
 
-  Future<void> _generateInvoice() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final cafeId = await AuthService.getCafeId();
-      final cashierId = await AuthService.getUserId();
-
-      if (cafeId == null || cafeId.isEmpty) {
-        throw Exception('cafe_id tidak ditemukan. Silakan login ulang.');
-      }
-
-      if (cashierId == null || cashierId.isEmpty) {
-        throw Exception('cashier_id tidak ditemukan. Silakan login ulang.');
-      }
-
-      // 1. Siapkan data sesuai Pydantic Schema di FastAPI Anda
-      List<Map<String, dynamic>> itemsPayload =
-          widget.cart.map((item) {
-            return {
-              "menu_id": item['id'], // Pastikan 'id' menu ada di cart Anda
-              "quantity": item['qty'],
-              "price": item['price'],
-              "item_discount": item['itemDiscount'] ?? 0,
-              "is_manual": false, // Ubah jika ada menu manual
-            };
-          }).toList();
-
-      Map<String, dynamic> payload = {
-        "cafe_id": cafeId,
-        "cashier_id": cashierId,
-        "member_id": widget.memberId,
-        "voucher_id": widget.voucherId,
-        "payment_method": "xendit",
-        "amount_tendered": 0, // Karena bayar online
-        "discount_amount": widget.discountAmount,
-        "voucher_discount_amount": widget.voucherDiscountAmount,
-        "items": itemsPayload,
-      };
-
-      // 2. Tembak API menggunakan class Api buatan Anda
-      final response = await Api.post('/api/transactions/checkout', payload);
-
-      if (response['status'] == 'success') {
-        String invoiceUrl = response['data']['invoice_url'];
-        _transactionId = response['data']['transaction_id'];
-        _invoiceUrl = invoiceUrl;
-
-        if (!mounted) return;
-        setState(() {
-          _statusMessage = "Menunggu Pelanggan Membayar...";
-          _isLoading = false;
-        });
-
-        // 3. Buka link Xendit di Browser Tablet/HP
-        final Uri url = Uri.parse(invoiceUrl);
-        final canOpen = await canLaunchUrl(url);
-        if (!canOpen ||
-            !await launchUrl(url, mode: LaunchMode.inAppBrowserView)) {
-          throw Exception(
-            'Gagal membuka link pembayaran. Salin URL di bawah ini dan buka manual.',
-          );
-        }
-
-        // 4. Mulai dengarkan sinyal Lunas dari WebSocket
-        _listenToWebSocket(_transactionId!);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _statusMessage = "Gagal: ${e.toString()}";
-      });
-    }
-  }
-
-  void _listenToWebSocket(String transactionId) {
-    // GANTI IP DI BAWAH SESUAI DENGAN IP VPS ANDA !
-    final wsUrl = Uri.parse('ws://103.150.92.223:8000/api/ws/updates');
-    _channel = WebSocketChannel.connect(wsUrl);
-
-    _channel!.stream.listen(
-      (message) {
-        if (message == "PAYMENT_SUCCESS_$transactionId") {
-          _tampilkanSukses("Pembayaran Berhasil! ✅");
-        } else if (message == "PAYMENT_EXPIRED_$transactionId") {
-          _tampilkanGagal("Waktu Pembayaran Habis (Expired) ❌");
-        }
-      },
-      onError: (error) {
-        print("WebSocket Error: $error");
-      },
-    );
-  }
-
-  void _tampilkanSukses(String pesan) {
-    _channel?.sink.close(); // Tutup koneksi agar hemat memori
+  void _konfirmasiPembayaran() {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder:
-          (_) => AlertDialog(
-            title: Text(pesan, style: TextStyle(color: Colors.green)),
-            content: Text("Tagihan telah dibayar lunas via Xendit."),
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: Text('Konfirmasi Pembayaran'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Apakah pembayaran sudah diterima?'),
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Pembayaran:',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        'Rp ${widget.finalTotal.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E88E5),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             actions: [
               TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 onPressed: () {
-                  // Tutup dialog
-                  Navigator.pop(context);
-                  // Tutup layar QRIS & kembali ke layar awal (bersihkan keranjang)
-                  Navigator.pop(context, true);
+                  Navigator.pop(context); // Tutup dialog
+                  Navigator.pop(
+                    context,
+                    true,
+                  ); // Kembali dengan status berhasil
                 },
-                child: Text("Cetak Struk & Selesai"),
+                child: Text(
+                  'Ya, Pembayaran Diterima',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
     );
   }
 
-  void _tampilkanGagal(String pesan) {
-    _channel?.sink.close();
-    if (!mounted) return;
-    setState(() => _statusMessage = pesan);
-  }
-
-  Future<void> _copyInvoiceUrl() async {
-    final url = _invoiceUrl;
-    if (url == null || url.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: url));
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Link pembayaran disalin')));
+  void _batalkan() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Batalkan Pembayaran?'),
+            content: Text(
+              'Apakah Anda yakin ingin membatalkan pembayaran ini?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Lanjutkan'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () {
+                  Navigator.pop(context); // Tutup dialog
+                  Navigator.pop(context, false); // Kembali dengan status batal
+                },
+                child: Text(
+                  'Ya, Batalkan',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+    );
   }
 
   @override
   void dispose() {
-    _channel?.sink.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Pembayaran QRIS / Online")),
-      body: Center(
-        child:
-            _isLoading
-                ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: Color.fromARGB(255, 252, 250, 245),
+      appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 252, 250, 245),
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.close, color: Color(0xFF3E2723)),
+          onPressed: _batalkan,
+        ),
+        title: Text(
+          'Pembayaran QRIS',
+          style: TextStyle(
+            color: Color(0xFF3E2723),
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Header Total
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(_statusMessage, style: TextStyle(fontSize: 16)),
-                  ],
-                )
-                : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.qr_code_scanner, size: 100, color: Colors.blue),
-                    SizedBox(height: 16),
                     Text(
-                      _statusMessage,
+                      'Total Pembayaran',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Rp ${widget.finalTotal.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
+                      style: TextStyle(
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E88E5),
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed:
-                          _transactionId == null ? _generateInvoice : null,
-                      child: Text("Coba Buat Tagihan Lagi"),
-                    ),
-                    if (_invoiceUrl != null) ...[
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: SelectableText(
-                          _invoiceUrl!,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: _copyInvoiceUrl,
-                        child: const Text('Salin Link Pembayaran'),
-                      ),
-                    ],
                   ],
                 ),
+              ),
+              SizedBox(height: 32),
+
+              // QRIS Image
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    // Gambar QRIS - Ganti dengan gambar Anda
+                    Container(
+                      width: 250,
+                      height: 250,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[50],
+                      ),
+                      child: Image.asset(
+                        'assets/qris.png', // Ganti dengan path gambar QRIS Anda
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.qr_code_2,
+                                  size: 80,
+                                  color: Colors.grey[400],
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Gambar QRIS',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Scan kode QRIS dengan smartphone Anda',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 32),
+
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: _batalkan,
+                      child: Text(
+                        'Batalkan',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF1E88E5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: _konfirmasiPembayaran,
+                      child: Text(
+                        'Pembayaran Diterima',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+
+              // Info Box
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.orange[700],
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Klik "Pembayaran Diterima" setelah pelanggan menyelesaikan pembayaran QRIS',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.orange[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
