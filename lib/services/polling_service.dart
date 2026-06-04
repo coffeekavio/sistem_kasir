@@ -8,15 +8,18 @@ class PollingService {
   static Timer? _fastTimer;
   static Timer? _slowTimer;
   static VoidCallback? _onMenuSync;
+  static VoidCallback? _onTransactionSync;
   static VoidCallback? _onCategorySync;
   static VoidCallback? _onMemberSync;
 
   static void start({
     required VoidCallback onMenuSync,
+    VoidCallback? onTransactionSync,
     VoidCallback? onCategorySync,
     VoidCallback? onMemberSync,
   }) {
     _onMenuSync = onMenuSync;
+    _onTransactionSync = onTransactionSync;
     _onCategorySync = onCategorySync;
     _onMemberSync = onMemberSync;
 
@@ -37,6 +40,7 @@ class PollingService {
         }
 
         _onMenuSync?.call();
+        _onTransactionSync?.call();
       });
     }
 

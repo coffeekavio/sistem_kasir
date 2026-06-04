@@ -295,6 +295,7 @@ class _MenuScreenState extends State<MenuScreen> {
         _cart[index]["qty"] += 1;
       } else {
         _cart.add({
+          "menu_id": menu["id"],
           "name": menu["name"],
           "variant": "Standard",
           "price": int.parse(menu["price"].toString().replaceAll('.', '')),
@@ -491,6 +492,10 @@ class _MenuScreenState extends State<MenuScreen> {
               (context) => QrisScreen(
                 cart: _cart,
                 finalTotal: _finalTotal,
+                memberId: null, // atau dari member yang dipilih
+                voucherId: _selectedVoucherForPayment?['id'],
+                discountAmount: (_total - _subtotal).toInt(),
+                voucherDiscountAmount: 0,
                 memberPointsRedeemed:
                     _isMemberClaimSelected ? _pointsToRedeem : 0,
                 selectedVoucher: _selectedVoucherForPayment,

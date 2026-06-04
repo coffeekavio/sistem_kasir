@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../services/transaction_service.dart';
 
 class QrisScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
@@ -27,74 +28,66 @@ class QrisScreen extends StatefulWidget {
 }
 
 class _QrisScreenState extends State<QrisScreen> {
-  @override
-  void initState() {
-    super.initState();
-  }
+  bool _isLoading = false;
 
-  void _konfirmasiPembayaran() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            title: Text('Konfirmasi Pembayaran'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Apakah pembayaran sudah diterima?'),
-                SizedBox(height: 16),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total Pembayaran:',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        'Rp ${widget.finalTotal.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E88E5),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
+  void _konfirmasiPembayaran() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // POST transaksi ke backend
+      final response = await TransactionService.createTransaction(
+        cart: widget.cart,
+        totalAmount: widget.finalTotal,
+        memberId: widget.memberId,
+        voucherId: widget.voucherId,
+        discountAmount: widget.discountAmount,
+        voucherDiscountAmount: widget.voucherDiscountAmount,
+        memberPointsRedeemed: widget.memberPointsRedeemed,
+      );
+
+      if (!mounted) return;
+
+      if (response['status'] == 'success') {
+        // Tampilkan dialog sukses
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text('Pembayaran Berhasil'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 48),
+                    SizedBox(height: 16),
+                    Text(
+                      'Transaksi berhasil disimpan',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+                actions: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pop(context, true); // Kembali ke checkout
+                    },
+                    child: Text('OK'),
+                  ),
+                ],
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                onPressed: () {
-                  Navigator.pop(context); // Tutup dialog
-                  Navigator.pop(
-                    context,
-                    true,
-                  ); // Kembali dengan status berhasil
-                },
-                child: Text(
-                  'Ya, Pembayaran Diterima',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-    );
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan transaksi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _batalkan() {
@@ -114,8 +107,8 @@ class _QrisScreenState extends State<QrisScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 onPressed: () {
-                  Navigator.pop(context); // Tutup dialog
-                  Navigator.pop(context, false); // Kembali dengan status batal
+                  Navigator.pop(context);
+                  Navigator.pop(context, false);
                 },
                 child: Text(
                   'Ya, Batalkan',
@@ -159,7 +152,6 @@ class _QrisScreenState extends State<QrisScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Header Total
               Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -190,8 +182,6 @@ class _QrisScreenState extends State<QrisScreen> {
                 ),
               ),
               SizedBox(height: 32),
-
-              // QRIS Image
               Container(
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -201,7 +191,6 @@ class _QrisScreenState extends State<QrisScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Gambar QRIS - Ganti dengan gambar Anda
                     Container(
                       width: 250,
                       height: 250,
@@ -211,7 +200,7 @@ class _QrisScreenState extends State<QrisScreen> {
                         color: Colors.grey[50],
                       ),
                       child: Image.asset(
-                        'assets/qris.png', // Ganti dengan path gambar QRIS Anda
+                        'assets/qris.png',
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           return Center(
@@ -246,8 +235,6 @@ class _QrisScreenState extends State<QrisScreen> {
                 ),
               ),
               SizedBox(height: 32),
-
-              // Buttons
               Row(
                 children: [
                   Expanded(
@@ -280,22 +267,32 @@ class _QrisScreenState extends State<QrisScreen> {
                         ),
                         padding: EdgeInsets.symmetric(vertical: 12),
                       ),
-                      onPressed: _konfirmasiPembayaran,
-                      child: Text(
-                        'Pembayaran Diterima',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
+                      onPressed: _isLoading ? null : _konfirmasiPembayaran,
+                      child:
+                          _isLoading
+                              ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                              : Text(
+                                'Pembayaran Diterima',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 16),
-
-              // Info Box
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(

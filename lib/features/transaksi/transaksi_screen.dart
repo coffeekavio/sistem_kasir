@@ -3,6 +3,7 @@ import 'package:kasir/features/kasir/component/sidebar_component.dart';
 import 'package:kasir/features/kasir/component/navbar_component.dart';
 import 'package:intl/intl.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
+import 'package:kasir/services/transaction_service.dart';
 
 class TransaksiScreen extends StatefulWidget {
   const TransaksiScreen({super.key});
@@ -15,90 +16,73 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
 
-  // Data transaksi dummy
-  final List<Map<String, dynamic>> _transaksiList = [
-    {
-      "id": "TRX001",
-      "date": DateTime.now(),
-      "time": "09:30",
-      "items": "Espresso x2, Cappuccino x1",
-      "total": 65000,
-      "method": "Tunai",
-      "status": "Selesai",
-      "member": "Ahmad Budiman",
-    },
-    {
-      "id": "TRX002",
-      "date": DateTime.now(),
-      "time": "10:15",
-      "items": "Latte x3",
-      "total": 72000,
-      "method": "Kartu Kredit",
-      "status": "Selesai",
-      "member": "Siti Nurhaliza",
-    },
-    {
-      "id": "TRX003",
-      "date": DateTime.now(),
-      "time": "11:45",
-      "items": "Americano x1, Snack Pastry x2",
-      "total": 48000,
-      "method": "QRIS",
-      "status": "Selesai",
-      "member": "-",
-    },
-    {
-      "id": "TRX004",
-      "date": DateTime.now().subtract(Duration(days: 1)),
-      "time": "14:20",
-      "items": "Fresh Juice x2, Coffee x1",
-      "total": 55000,
-      "method": "Tunai",
-      "status": "Selesai",
-      "member": "Budi Santoso",
-    },
-    {
-      "id": "TRX005",
-      "date": DateTime.now().subtract(Duration(days: 1)),
-      "time": "15:30",
-      "items": "Mochaccino x2",
-      "total": 54000,
-      "method": "Kartu Debit",
-      "status": "Selesai",
-      "member": "-",
-    },
-    {
-      "id": "TRX006",
-      "date": DateTime.now().subtract(Duration(days: 2)),
-      "time": "09:00",
-      "items": "Espresso x1, Cappuccino x2",
-      "total": 70000,
-      "method": "QRIS",
-      "status": "Selesai",
-      "member": "Rini Wijaya",
-    },
-    {
-      "id": "TRX007",
-      "date": DateTime.now().subtract(Duration(days: 3)),
-      "time": "16:45",
-      "items": "Iced Tea x3, Dessert x2",
-      "total": 85000,
-      "method": "Tunai",
-      "status": "Selesai",
-      "member": "Hendra Kusuma",
-    },
-  ];
-
-  final List<String> _methods = [
-    "Tunai",
-    "Kartu Kredit",
-    "Kartu Debit",
-    "QRIS",
-    "E-Wallet",
-  ];
+  final List<Map<String, dynamic>> _transaksiList = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   String _searchText = "";
   String _selectedFilter = "Semua"; // "Hari Ini", "Kemarin", "Semua"
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final transactions = await TransactionService.fetchTransactions();
+      if (!mounted) return;
+      setState(() {
+        _transaksiList
+          ..clear()
+          ..addAll(transactions.map(_mapTransaction));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString();
+        _transaksiList.clear();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Map<String, dynamic> _mapTransaction(Map<String, dynamic> trx) {
+    final paymentMethod =
+        (trx['payment_method'] ?? '').toString().toLowerCase();
+    final createdAtRaw = trx['created_at']?.toString();
+    final createdAt = DateTime.tryParse(createdAtRaw ?? '') ?? DateTime.now();
+
+    return {
+      'id': trx['receipt_number'] ?? trx['id'] ?? '-',
+      'date': createdAt,
+      'time': DateFormat('HH:mm').format(createdAt),
+      'items': trx['items'] ?? '',
+      'total': trx['total_amount'] ?? 0,
+      'method':
+          paymentMethod == 'cash'
+              ? 'Tunai'
+              : paymentMethod == 'qris_static'
+              ? 'QRIS'
+              : paymentMethod,
+      'status':
+          (trx['status'] ?? '').toString().toLowerCase() == 'completed'
+              ? 'Selesai'
+              : (trx['status'] ?? '-').toString(),
+      'member': trx['member_name'] ?? trx['member'] ?? '-',
+    };
+  }
 
   // Helper untuk method icon
   IconData _getMethodIcon(String method) {
@@ -329,7 +313,13 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                         // Transaksi List
                         Expanded(
                           child:
-                              _filteredTransaksi.isEmpty
+                              _isLoading
+                                  ? Center(
+                                    child: CircularProgressIndicator(
+                                      color: Color(0xFF1E88E5),
+                                    ),
+                                  )
+                                  : _filteredTransaksi.isEmpty
                                   ? Center(
                                     child: Column(
                                       mainAxisAlignment:
@@ -342,7 +332,9 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                         ),
                                         SizedBox(height: 8),
                                         Text(
-                                          "Tidak ada transaksi",
+                                          _errorMessage != null
+                                              ? "Gagal memuat transaksi"
+                                              : "Tidak ada transaksi",
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey[600],
@@ -351,7 +343,9 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                         ),
                                         SizedBox(height: 4),
                                         Text(
-                                          "Belum ada transaksi pada periode ini",
+                                          _errorMessage != null
+                                              ? "Coba muat ulang data dari API"
+                                              : "Belum ada transaksi pada periode ini",
                                           style: TextStyle(
                                             fontSize: 10,
                                             color: Colors.grey[500],
@@ -565,10 +559,15 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
                                                     ),
                                                     child: Text(
                                                       transaksi["items"]
-                                                          .toString()
-                                                          .split(",")
-                                                          .length
-                                                          .toString(),
+                                                              .toString()
+                                                              .trim()
+                                                              .isEmpty
+                                                          ? '0'
+                                                          : transaksi["items"]
+                                                              .toString()
+                                                              .split(",")
+                                                              .length
+                                                              .toString(),
                                                       style: TextStyle(
                                                         fontSize: 8,
                                                         color: Colors.grey[700],

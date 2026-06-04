@@ -12,6 +12,9 @@ import 'package:kasir/providers/kategori_provider.dart';
 import 'package:kasir/providers/menu_provider.dart';
 import 'package:provider/provider.dart';
 
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
@@ -30,6 +33,7 @@ class MainApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        navigatorObservers: [routeObserver],
         theme: ThemeData(
           useMaterial3: true,
           fontFamily: GoogleFonts.inter().fontFamily,

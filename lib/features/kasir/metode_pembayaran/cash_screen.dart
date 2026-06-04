@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../services/transaction_service.dart';
 
 class CashScreen extends StatefulWidget {
   final String? transactionId;
@@ -87,14 +88,58 @@ class _CashScreenState extends State<CashScreen> {
       return;
     }
 
-    Navigator.pop(context, true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Pembayaran Tunai berhasil!'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // Simpan transaksi ke backend
+    _saveTransactionAndFinish();
+  }
+
+  Future<void> _saveTransactionAndFinish() async {
+    setState(() {
+      _isPrinting = true; // reuse as loading
+    });
+
+    try {
+      final response = await TransactionService.createTransaction(
+        cart: widget.items ?? [],
+        totalAmount: widget.finalTotal ?? 0,
+        memberId: null,
+        voucherId: widget.selectedVoucher?['id'],
+        discountAmount: 0,
+        voucherDiscountAmount: 0,
+        memberPointsRedeemed: widget.memberPointsRedeemed,
+        paymentMethod: 'cash',
+        amountTendered: _cashAmount,
+      );
+
+      if (response['status'] == 'success') {
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Pembayaran Tunai berhasil!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        throw Exception(response.toString());
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan transaksi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPrinting = false;
+        });
+      }
+    }
   }
 
   String _formatCurrency(int value) {
@@ -110,7 +155,7 @@ class _CashScreenState extends State<CashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF3E2723),
+        backgroundColor: Color(0xFF1E88E5),
         elevation: 0,
         title: Text(
           'Pembayaran Tunai',
@@ -268,10 +313,6 @@ class _CashScreenState extends State<CashScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Pajak (1.5%)',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
                     Text(
                       _formatCurrency(widget.tax ?? 0),
                       style: TextStyle(
