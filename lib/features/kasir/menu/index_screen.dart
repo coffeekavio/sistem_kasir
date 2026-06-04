@@ -7,6 +7,7 @@ import 'package:kasir/features/kasir/menu/edit_screen.dart';
 import 'package:kasir/features/kasir/menu/component/checkout_screen.dart';
 import 'package:kasir/features/kasir/menu/component/manual_screen.dart';
 import 'package:kasir/features/kasir/menu/component/list_menu_screen.dart';
+import 'package:kasir/features/kasir/menu/component/modal_pembayaran.dart';
 import 'package:kasir/features/kasir/member/index_member.dart';
 import 'package:kasir/services/auth_service.dart';
 import 'package:kasir/services/polling_service.dart';
@@ -35,6 +36,10 @@ class _MenuScreenState extends State<MenuScreen> {
   double _discountPercent = 0;
   MenuProvider? _menuProvider;
   KategoriProvider? _kategoriProvider;
+  // Member Claim State
+  bool _isMemberClaimSelected = false;
+  int _pointsToRedeem = 0;
+  Map<String, dynamic>? _selectedVoucherForPayment;
 
   @override
   void initState() {
@@ -350,116 +355,27 @@ class _MenuScreenState extends State<MenuScreen> {
     return _subtotal;
   }
 
-  void _showPaymentMethodDialog() {
+  void _showPaymentMethodDialog(CheckoutPaymentOptions options) {
     showDialog(
       context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      barrierDismissible: false,
+      builder:
+          (context) => PaymentMethodDialog(
+            options: options,
+            onPaymentMethodSelected: (
+              method,
+              isMemberClaim,
+              pointsToRedeem,
+              selectedVoucher,
+            ) {
+              setState(() {
+                _isMemberClaimSelected = isMemberClaim;
+                _pointsToRedeem = pointsToRedeem;
+                _selectedVoucherForPayment = selectedVoucher;
+              });
+              _processPayment(method);
+            },
           ),
-          child: SizedBox(
-            width: 320,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Pilih Metode Pembayaran',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF3E2723),
-                      fontSize: 18,
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  // Cash button
-                  SizedBox(
-                    width: double.maxFinite,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF1E88E5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        await _processPayment('Tunai');
-                      },
-                      icon: Icon(Icons.money, color: Colors.white, size: 22),
-                      label: Text(
-                        'Tunai (Cash)',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  // QRIS button
-                  SizedBox(
-                    width: double.maxFinite,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF1E88E5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        await _processPayment('QRIS');
-                      },
-                      icon: Icon(
-                        Icons.qr_code_2,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      label: Text(
-                        'QRIS',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  // Cancel button
-                  SizedBox(
-                    width: double.maxFinite,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        side: BorderSide(color: Colors.grey[300]!),
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Batal',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -562,17 +478,33 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Future<void> _processPayment(String method) async {
+    // Debug log untuk melihat data yang dikirim
+    print('Member Claim: $_isMemberClaimSelected');
+    print('Points to Redeem: $_pointsToRedeem');
+    print('Selected Voucher: $_selectedVoucherForPayment');
+
     if (method == 'QRIS') {
       final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder:
-              (context) => QrisScreen(cart: _cart, finalTotal: _finalTotal),
+              (context) => QrisScreen(
+                cart: _cart,
+                finalTotal: _finalTotal,
+                memberPointsRedeemed:
+                    _isMemberClaimSelected ? _pointsToRedeem : 0,
+                selectedVoucher: _selectedVoucherForPayment,
+              ),
         ),
       );
 
       if (result == true) {
         _clearCart();
+        setState(() {
+          _isMemberClaimSelected = false;
+          _pointsToRedeem = 0;
+          _selectedVoucherForPayment = null;
+        });
       }
     } else if (method == 'Tunai') {
       final result = await Navigator.push<bool>(
@@ -587,12 +519,20 @@ class _MenuScreenState extends State<MenuScreen> {
                 discount: _discountPercent,
                 tax: _tax,
                 finalTotal: _finalTotal,
+                memberPointsRedeemed:
+                    _isMemberClaimSelected ? _pointsToRedeem : 0,
+                selectedVoucher: _selectedVoucherForPayment,
               ),
         ),
       );
 
       if (result == true) {
         _clearCart();
+        setState(() {
+          _isMemberClaimSelected = false;
+          _pointsToRedeem = 0;
+          _selectedVoucherForPayment = null;
+        });
       }
     }
   }

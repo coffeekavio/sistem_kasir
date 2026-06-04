@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:kasir/features/kasir/metode_pembayaran/qris_screen.dart';
-import 'package:kasir/features/kasir/metode_pembayaran/cash_screen.dart';
 import 'package:kasir/features/kasir/menu/edit_screen.dart';
 import 'package:kasir/services/member_service.dart';
 import 'package:kasir/services/voucher_service.dart';
+
+class CheckoutPaymentOptions {
+  final Map<String, dynamic>? member;
+  final Map<String, dynamic>? selectedVoucher;
+  final List<Map<String, dynamic>> availableVouchers;
+
+  const CheckoutPaymentOptions({
+    required this.member,
+    required this.selectedVoucher,
+    required this.availableVouchers,
+  });
+}
 
 class CheckoutScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
@@ -18,7 +28,7 @@ class CheckoutScreen extends StatefulWidget {
   final int subtotal;
   final int tax;
   final int finalTotal;
-  final VoidCallback onShowPaymentDialog;
+  final Function(CheckoutPaymentOptions) onShowPaymentDialog;
   final Function(String?) onCustomerNameChanged;
   final Function(int, Map<String, dynamic>) onUpdateCartItem;
 
@@ -47,13 +57,13 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   late TextEditingController _customerNameController;
-  List<Map<String, dynamic>> _memberSuggestions = [];
   bool _isSearchingMembers = false;
   bool _isLoadingVouchers = false;
   String? _voucherError;
 
   // Voucher & Discount state
   double _memberDiscount = 0;
+  Map<String, dynamic>? _selectedMember;
   Map<String, dynamic>? _selectedVoucher;
   List<Map<String, dynamic>> _availableVouchers = [];
 
@@ -144,6 +154,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
+  void _openPaymentDialog() {
+    widget.onShowPaymentDialog(
+      CheckoutPaymentOptions(
+        member: _selectedMember,
+        selectedVoucher: _selectedVoucher,
+        availableVouchers: _availableVouchers,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -183,159 +203,372 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                           ),
                           SizedBox(height: 6),
-                          Autocomplete<Map<String, dynamic>>(
-                            optionsBuilder: (
-                              TextEditingValue textEditingValue,
-                            ) async {
-                              if (textEditingValue.text.isEmpty) {
-                                return [];
-                              }
-                              // API call untuk search member
-                              setState(() {
-                                _isSearchingMembers = true;
-                              });
-                              try {
-                                final members =
-                                    await MemberService.searchMembers(
-                                      textEditingValue.text,
-                                    );
-                                return members;
-                              } catch (e) {
-                                print('Error searching members: $e');
-                                return [];
-                              } finally {
-                                if (mounted) {
+                          Stack(
+                            children: [
+                              Autocomplete<Map<String, dynamic>>(
+                                optionsBuilder: (
+                                  TextEditingValue textEditingValue,
+                                ) async {
+                                  if (textEditingValue.text.isEmpty) {
+                                    return [];
+                                  }
                                   setState(() {
-                                    _isSearchingMembers = false;
+                                    _isSearchingMembers = true;
                                   });
-                                }
-                              }
-                            },
-                            onSelected: (Map<String, dynamic> selection) {
-                              _customerNameController.text =
-                                  selection['name'] ?? '';
-                              widget.onCustomerNameChanged(
-                                selection['name'] ?? '',
-                              );
-                              setState(() {
-                                _memberDiscount =
-                                    (selection['discount'] as num?)
-                                        ?.toDouble() ??
-                                    0;
-                              });
-                            },
-                            fieldViewBuilder: (
-                              context,
-                              textEditingController,
-                              focusNode,
-                              onFieldSubmitted,
-                            ) {
-                              _customerNameController = textEditingController;
-                              return TextField(
-                                controller: textEditingController,
-                                focusNode: focusNode,
-                                onChanged: (value) {
-                                  widget.onCustomerNameChanged(
-                                    value.isEmpty ? null : value,
-                                  );
-                                  setState(() {});
+                                  try {
+                                    final members =
+                                        await MemberService.searchMembers(
+                                          textEditingValue.text,
+                                        );
+                                    return members;
+                                  } catch (e) {
+                                    print('Error searching members: $e');
+                                    return [];
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isSearchingMembers = false;
+                                      });
+                                    }
+                                  }
                                 },
-                                onSubmitted: (_) => onFieldSubmitted(),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: "Cari nama member",
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey[300]!,
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: BorderSide(color: Colors.grey),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 8,
-                                  ),
-                                  suffixIcon:
-                                      _isSearchingMembers
-                                          ? SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: Padding(
-                                              padding: EdgeInsets.all(8.0),
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            ),
-                                          )
-                                          : null,
-                                ),
-                                style: TextStyle(fontSize: 10),
-                              );
-                            },
-                            optionsViewBuilder: (context, onSelected, options) {
-                              return Align(
-                                alignment: Alignment.topLeft,
-                                child: Material(
-                                  child: Container(
-                                    width: 200,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
+                                onSelected: (Map<String, dynamic> selection) {
+                                  _customerNameController.text =
+                                      selection['name'] ?? '';
+                                  widget.onCustomerNameChanged(
+                                    selection['name'] ?? '',
+                                  );
+                                  final discount =
+                                      (selection['discount'] as num?)
+                                          ?.toDouble() ??
+                                      0;
+                                  setState(() {
+                                    _selectedMember = selection;
+                                    _memberDiscount = discount;
+                                  });
+                                  widget.onDiscountChanged(discount);
+                                },
+                                fieldViewBuilder: (
+                                  context,
+                                  textEditingController,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  _customerNameController =
+                                      textEditingController;
+                                  return TextField(
+                                    controller: textEditingController,
+                                    focusNode: focusNode,
+                                    onChanged: (value) {
+                                      widget.onCustomerNameChanged(
+                                        value.isEmpty ? null : value,
+                                      );
+                                      setState(() {
+                                        if (value.isEmpty ||
+                                            value !=
+                                                (_selectedMember?['name'] ?? '')
+                                                    .toString()) {
+                                          _selectedMember = null;
+                                          _memberDiscount = 0;
+                                          widget.onDiscountChanged(0);
+                                        }
+                                      });
+                                    },
+                                    onSubmitted: (_) => onFieldSubmitted(),
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: "Cari nama member",
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                        borderSide: BorderSide(
+                                          color: Colors.grey[300]!,
+                                        ),
                                       ),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: ListView.builder(
-                                      padding: EdgeInsets.zero,
-                                      shrinkWrap: true,
-                                      itemCount: options.length,
-                                      itemBuilder: (context, index) {
-                                        final option = options.elementAt(index);
-                                        return InkWell(
-                                          onTap: () => onSelected(option),
-                                          child: Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  option['name'] ?? '',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                        borderSide: BorderSide(
+                                          color:
+                                              _selectedMember != null
+                                                  ? Color(0xFF1E88E5)
+                                                  : Colors.grey[300]!,
+                                          width:
+                                              _selectedMember != null ? 2 : 1,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                        borderSide: BorderSide(
+                                          color: Color(0xFF1E88E5),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      filled: _selectedMember != null,
+                                      fillColor:
+                                          _selectedMember != null
+                                              ? Color(
+                                                0xFF1E88E5,
+                                              ).withOpacity(0.05)
+                                              : Colors.transparent,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 8,
+                                      ),
+                                      prefixIcon:
+                                          _selectedMember != null
+                                              ? Padding(
+                                                padding: EdgeInsets.all(6),
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: Color(0xFF1E88E5),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.check,
+                                                    color: Colors.white,
+                                                    size: 14,
                                                   ),
                                                 ),
-                                                if (option['phone'] != null)
-                                                  Text(
-                                                    option['phone'] ?? '',
-                                                    style: TextStyle(
-                                                      fontSize: 8,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                              )
+                                              : null,
+                                      suffixIcon:
+                                          _isSearchingMembers
+                                              ? SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: Padding(
+                                                  padding: EdgeInsets.all(8.0),
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                ),
+                                              )
+                                              : null,
                                     ),
+                                    style: TextStyle(fontSize: 10),
+                                  );
+                                },
+                                optionsViewBuilder: (
+                                  context,
+                                  onSelected,
+                                  options,
+                                ) {
+                                  return Align(
+                                    alignment: Alignment.topLeft,
+                                    child: Material(
+                                      elevation: 4.0,
+                                      child: Container(
+                                        width: 240,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.1,
+                                              ),
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ListView.builder(
+                                          padding: EdgeInsets.zero,
+                                          shrinkWrap: true,
+                                          itemCount: options.length,
+                                          itemBuilder: (context, index) {
+                                            final option = options.elementAt(
+                                              index,
+                                            );
+                                            final isSelected =
+                                                _selectedMember != null &&
+                                                _selectedMember!['id'] ==
+                                                    option['id'];
+
+                                            return Container(
+                                              color:
+                                                  isSelected
+                                                      ? Color(
+                                                        0xFF1E88E5,
+                                                      ).withOpacity(0.1)
+                                                      : Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () => onSelected(option),
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              option['name'] ??
+                                                                  '',
+                                                              style: TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    isSelected
+                                                                        ? FontWeight
+                                                                            .w600
+                                                                        : FontWeight
+                                                                            .w400,
+                                                                color:
+                                                                    isSelected
+                                                                        ? Color(
+                                                                          0xFF1E88E5,
+                                                                        )
+                                                                        : Colors
+                                                                            .black87,
+                                                              ),
+                                                            ),
+                                                            if (option['phone'] !=
+                                                                null)
+                                                              Padding(
+                                                                padding:
+                                                                    EdgeInsets.only(
+                                                                      top: 3,
+                                                                    ),
+                                                                child: Text(
+                                                                  option['phone'] ??
+                                                                      '',
+                                                                  style: TextStyle(
+                                                                    fontSize: 9,
+                                                                    color:
+                                                                        Colors
+                                                                            .grey[600],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            if (option['discount'] !=
+                                                                null)
+                                                              Padding(
+                                                                padding:
+                                                                    EdgeInsets.only(
+                                                                      top: 3,
+                                                                    ),
+                                                                child: Text(
+                                                                  'Diskon: ${option['discount']}%',
+                                                                  style: TextStyle(
+                                                                    fontSize: 8,
+                                                                    color: Color(
+                                                                      0xFF1E88E5,
+                                                                    ),
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      if (isSelected)
+                                                        Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                                shape:
+                                                                    BoxShape
+                                                                        .circle,
+                                                                color: Color(
+                                                                  0xFF1E88E5,
+                                                                ),
+                                                              ),
+                                                          padding:
+                                                              EdgeInsets.all(4),
+                                                          child: Icon(
+                                                            Icons.check,
+                                                            color: Colors.white,
+                                                            size: 14,
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          // Info Member yang dipilih
+                          if (_selectedMember != null)
+                            Padding(
+                              padding: EdgeInsets.only(top: 8),
+                              child: Container(
+                                padding: EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF1E88E5).withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: Color(0xFF1E88E5).withOpacity(0.3),
                                   ),
                                 ),
-                              );
-                            },
-                          ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '✓ Member Terpilih',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF1E88E5),
+                                            ),
+                                          ),
+                                          if (_memberDiscount > 0)
+                                            Padding(
+                                              padding: EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                'Diskon: ${_memberDiscount.toStringAsFixed(1)}%',
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: Colors.grey[700],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedMember = null;
+                                          _memberDiscount = 0;
+                                          _customerNameController.clear();
+                                          widget.onCustomerNameChanged(null);
+                                          widget.onDiscountChanged(0);
+                                        });
+                                      },
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: Color(0xFF1E88E5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       SizedBox(height: 12),
@@ -694,107 +927,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
               SizedBox(height: 8),
-              // Voucher Dropdown
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Voucher Diskon",
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 9),
-                  ),
-                  SizedBox(height: 3),
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<Map<String, dynamic>>(
-                        value:
-                            _availableVouchers.contains(_selectedVoucher)
-                                ? _selectedVoucher
-                                : null,
-                        hint: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child:
-                              _isLoadingVouchers
-                                  ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 12,
-                                        height: 12,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        "Memuat voucher...",
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          color: Colors.grey[500],
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                  : Text(
-                                    _voucherError != null
-                                        ? "Voucher gagal dimuat"
-                                        : "Pilih voucher",
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      color:
-                                          _voucherError != null
-                                              ? Colors.red[400]
-                                              : Colors.grey[500],
-                                    ),
-                                  ),
-                        ),
-                        isExpanded: true,
-                        underline: const SizedBox(),
-                        items:
-                            _availableVouchers.map((voucher) {
-                              final name = (voucher['name'] ?? '').toString();
-                              final discount =
-                                  voucher['discount_percentage'] ??
-                                  voucher['discount'] ??
-                                  '';
-
-                              return DropdownMenuItem<Map<String, dynamic>>(
-                                value: voucher,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                  child: Text(
-                                    name.isEmpty
-                                        ? 'Voucher'
-                                        : '$name - ${discount.toString()}%',
-                                    style: const TextStyle(fontSize: 9),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                        onChanged: (Map<String, dynamic>? value) {
-                          setState(() {
-                            _selectedVoucher = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                  if (_voucherError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Gagal memuat voucher dari server.',
-                        style: TextStyle(fontSize: 8, color: Colors.red[400]),
-                      ),
-                    ),
-                ],
-              ),
-              SizedBox(height: 12),
               // Buttons
               Row(
                 children: [
@@ -827,9 +959,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ),
                       onPressed:
-                          widget.cart.isEmpty
-                              ? null
-                              : widget.onShowPaymentDialog,
+                          widget.cart.isEmpty ? null : _openPaymentDialog,
                       child: Text(
                         "Bayar",
                         style: TextStyle(

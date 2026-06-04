@@ -22,6 +22,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
   late TextEditingController _priceController;
   late TextEditingController _discountController;
   late TextEditingController _descriptionController;
+  String _discountType = 'rupiah'; // Pindahkan ke sini
 
   @override
   void initState() {
@@ -35,6 +36,8 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
     _descriptionController = TextEditingController(
       text: widget.item["description"] ?? "",
     );
+    // Ambil discount type dari item jika ada
+    _discountType = widget.item["discountType"] ?? 'rupiah';
   }
 
   @override
@@ -48,10 +51,20 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
   @override
   Widget build(BuildContext context) {
     final price = int.tryParse(_priceController.text) ?? widget.item["price"];
-    final discount = int.tryParse(_discountController.text) ?? 0;
+    final discountValue = int.tryParse(_discountController.text) ?? 0;
     final qty = widget.item["qty"] as int;
     final subtotal = price * qty;
-    final total = subtotal - discount;
+
+    // Hitung diskon berdasarkan tipe
+    int discountAmount = 0;
+    if (_discountType == 'rupiah') {
+      discountAmount = discountValue;
+    } else {
+      // Diskon persen
+      discountAmount = (subtotal * discountValue ~/ 100);
+    }
+
+    final total = subtotal - discountAmount;
 
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 252, 250, 245),
@@ -165,6 +178,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                     SizedBox(height: 16),
 
                     // Diskon Item
+                    // Diskon Item
                     Text(
                       "Diskon Item",
                       style: TextStyle(
@@ -175,6 +189,47 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                       ),
                     ),
                     SizedBox(height: 6),
+                    // Radio Button untuk Tipe Diskon
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Radio<String>(
+                                value: 'rupiah',
+                                groupValue: _discountType,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _discountType = value ?? 'rupiah';
+                                  });
+                                },
+                              ),
+                              Text('Rupiah', style: TextStyle(fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Radio<String>(
+                                value: 'persen',
+                                groupValue: _discountType,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _discountType = value ?? 'rupiah';
+                                  });
+                                },
+                              ),
+                              Text(
+                                'Persen (%)',
+                                style: TextStyle(fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
                     TextField(
                       controller: _discountController,
                       keyboardType: TextInputType.number,
@@ -195,7 +250,7 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                           horizontal: 12,
                           vertical: 10,
                         ),
-                        suffixText: "(Rp)",
+                        suffixText: _discountType == 'rupiah' ? "(Rp)" : "(%)",
                         filled: true,
                         fillColor: Colors.white,
                         suffixStyle: TextStyle(
@@ -336,16 +391,31 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                "Diskon",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 10,
-                                  color: Colors.grey[600],
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Diskon",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 10,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  Text(
+                                    _discountType == 'rupiah' ? "(Rp)" : "(%)",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 8,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
                               ),
                               Text(
-                                "- Rp $discount",
+                                _discountType == 'rupiah'
+                                    ? "- Rp $discountAmount"
+                                    : "- $discountValue% (Rp $discountAmount)",
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
@@ -426,13 +496,11 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                               updatedItem["price"] =
                                   int.tryParse(_priceController.text) ??
                                   widget.item["price"];
-                              updatedItem["itemDiscount"] =
-                                  int.tryParse(_discountController.text) ?? 0;
+                              updatedItem["itemDiscount"] = discountAmount;
+                              updatedItem["discountType"] = _discountType;
+                              updatedItem["discountValue"] = discountValue;
                               updatedItem["description"] =
                                   _descriptionController.text;
-
-                              widget.onSave(updatedItem);
-                              Navigator.pop(context);
                             },
                             child: Text(
                               'Simpan',

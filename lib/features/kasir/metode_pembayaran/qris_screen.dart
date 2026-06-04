@@ -12,6 +12,8 @@ class QrisScreen extends StatefulWidget {
   final String? voucherId;
   final int discountAmount;
   final int voucherDiscountAmount;
+  final int memberPointsRedeemed;
+  final Map<String, dynamic>? selectedVoucher;
 
   const QrisScreen({
     Key? key,
@@ -21,6 +23,8 @@ class QrisScreen extends StatefulWidget {
     this.voucherId,
     this.discountAmount = 0,
     this.voucherDiscountAmount = 0,
+    this.memberPointsRedeemed = 0,
+    this.selectedVoucher,
   }) : super(key: key);
 
   @override
@@ -99,7 +103,7 @@ class _QrisScreenState extends State<QrisScreen> {
         final Uri url = Uri.parse(invoiceUrl);
         final canOpen = await canLaunchUrl(url);
         if (!canOpen ||
-            !await launchUrl(url, mode: LaunchMode.externalApplication)) {
+            !await launchUrl(url, mode: LaunchMode.inAppBrowserView)) {
           throw Exception(
             'Gagal membuka link pembayaran. Salin URL di bawah ini dan buka manual.',
           );

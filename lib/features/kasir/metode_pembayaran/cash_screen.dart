@@ -8,6 +8,8 @@ class CashScreen extends StatefulWidget {
   final double? discount;
   final int? tax;
   final int? finalTotal;
+  final int memberPointsRedeemed;
+  final Map<String, dynamic>? selectedVoucher;
 
   const CashScreen({
     super.key,
@@ -17,6 +19,8 @@ class CashScreen extends StatefulWidget {
     this.discount,
     this.tax,
     this.finalTotal,
+    this.memberPointsRedeemed = 0,
+    this.selectedVoucher,
   });
 
   @override
