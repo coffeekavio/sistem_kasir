@@ -233,7 +233,26 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                     TextField(
                       controller: _discountController,
                       keyboardType: TextInputType.number,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (value) {
+                        if (value.length > 1 && value.startsWith('0')) {
+                          final normalized = value.replaceFirst(
+                            RegExp(r'^0+'),
+                            '',
+                          );
+                          if (normalized.isEmpty) {
+                            _discountController.text = '0';
+                            _discountController
+                                .selection = TextSelection.collapsed(offset: 1);
+                          } else {
+                            _discountController.text = normalized;
+                            _discountController
+                                .selection = TextSelection.collapsed(
+                              offset: normalized.length,
+                            );
+                          }
+                        }
+                        setState(() {});
+                      },
                       decoration: InputDecoration(
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -501,6 +520,8 @@ class _EditPesananScreenState extends State<EditPesananScreen> {
                               updatedItem["discountValue"] = discountValue;
                               updatedItem["description"] =
                                   _descriptionController.text;
+                              widget.onSave(updatedItem);
+                              Navigator.pop(context);
                             },
                             child: Text(
                               'Simpan',

@@ -62,7 +62,8 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
     final paymentMethod =
         (trx['payment_method'] ?? '').toString().toLowerCase();
     final createdAtRaw = trx['created_at']?.toString();
-    final createdAt = DateTime.tryParse(createdAtRaw ?? '') ?? DateTime.now();
+    final createdAt =
+        DateTime.tryParse(createdAtRaw ?? '')?.toLocal() ?? DateTime.now();
 
     return {
       'id': trx['receipt_number'] ?? trx['id'] ?? '-',
@@ -145,28 +146,39 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
   }
 
   List<Map<String, dynamic>> get _filteredTransaksi {
-    return _transaksiList.where((transaksi) {
-      bool matchesFilter = true;
+    final filtered =
+        _transaksiList.where((transaksi) {
+          bool matchesFilter = true;
 
-      if (_selectedFilter == "Hari Ini") {
-        matchesFilter = _isToday(transaksi["date"]);
-      } else if (_selectedFilter == "Kemarin") {
-        matchesFilter = _isYesterday(transaksi["date"]);
-      }
+          if (_selectedFilter == "Hari Ini") {
+            matchesFilter = _isToday(transaksi["date"]);
+          } else if (_selectedFilter == "Kemarin") {
+            matchesFilter = _isYesterday(transaksi["date"]);
+          }
 
-      final matchesSearch =
-          transaksi["id"].toString().toLowerCase().contains(
-            _searchText.toLowerCase(),
-          ) ||
-          transaksi["member"].toString().toLowerCase().contains(
-            _searchText.toLowerCase(),
-          ) ||
-          transaksi["items"].toString().toLowerCase().contains(
-            _searchText.toLowerCase(),
-          );
+          final matchesSearch =
+              transaksi["id"].toString().toLowerCase().contains(
+                _searchText.toLowerCase(),
+              ) ||
+              transaksi["member"].toString().toLowerCase().contains(
+                _searchText.toLowerCase(),
+              ) ||
+              transaksi["items"].toString().toLowerCase().contains(
+                _searchText.toLowerCase(),
+              );
 
-      return matchesFilter && matchesSearch;
-    }).toList();
+          return matchesFilter && matchesSearch;
+        }).toList();
+
+    filtered.sort((a, b) {
+      final dateA =
+          a['date'] as DateTime? ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final dateB =
+          b['date'] as DateTime? ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return dateB.compareTo(dateA);
+    });
+
+    return filtered;
   }
 
   double get _totalTransaksi {

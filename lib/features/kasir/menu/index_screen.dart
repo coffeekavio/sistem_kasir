@@ -40,6 +40,7 @@ class _MenuScreenState extends State<MenuScreen> {
   bool _isMemberClaimSelected = false;
   int _pointsToRedeem = 0;
   Map<String, dynamic>? _selectedVoucherForPayment;
+  Map<String, dynamic>? _selectedMember;
 
   @override
   void initState() {
@@ -373,6 +374,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 _isMemberClaimSelected = isMemberClaim;
                 _pointsToRedeem = pointsToRedeem;
                 _selectedVoucherForPayment = selectedVoucher;
+                _selectedMember = options.member;
               });
               _processPayment(method);
             },
@@ -492,7 +494,7 @@ class _MenuScreenState extends State<MenuScreen> {
               (context) => QrisScreen(
                 cart: _cart,
                 finalTotal: _finalTotal,
-                memberId: null, // atau dari member yang dipilih
+                memberId: _selectedMember?['id'],
                 voucherId: _selectedVoucherForPayment?['id'],
                 discountAmount: (_total - _subtotal).toInt(),
                 voucherDiscountAmount: 0,
@@ -527,6 +529,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 memberPointsRedeemed:
                     _isMemberClaimSelected ? _pointsToRedeem : 0,
                 selectedVoucher: _selectedVoucherForPayment,
+                memberId: _selectedMember?['id'],
               ),
         ),
       );

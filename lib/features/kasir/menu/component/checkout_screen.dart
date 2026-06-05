@@ -316,7 +316,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       prefixIcon:
                                           _selectedMember != null
                                               ? Padding(
-                                                padding: EdgeInsets.all(6),
+                                                padding: EdgeInsets.all(10),
                                                 child: Container(
                                                   decoration: BoxDecoration(
                                                     shape: BoxShape.circle,
@@ -488,7 +488,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                           child: Icon(
                                                             Icons.check,
                                                             color: Colors.white,
-                                                            size: 14,
+                                                            size: 10,
                                                           ),
                                                         ),
                                                     ],
@@ -506,69 +506,69 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ],
                           ),
                           // Info Member yang dipilih
-                          if (_selectedMember != null)
-                            Padding(
-                              padding: EdgeInsets.only(top: 8),
-                              child: Container(
-                                padding: EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFF1E88E5).withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: Color(0xFF1E88E5).withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '✓ Member Terpilih',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF1E88E5),
-                                            ),
-                                          ),
-                                          if (_memberDiscount > 0)
-                                            Padding(
-                                              padding: EdgeInsets.only(top: 4),
-                                              child: Text(
-                                                'Diskon: ${_memberDiscount.toStringAsFixed(1)}%',
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  color: Colors.grey[700],
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedMember = null;
-                                          _memberDiscount = 0;
-                                          _customerNameController.clear();
-                                          widget.onCustomerNameChanged(null);
-                                          widget.onDiscountChanged(0);
-                                        });
-                                      },
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: Color(0xFF1E88E5),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          // if (_selectedMember != null)
+                          //   Padding(
+                          //     padding: EdgeInsets.only(top: 8),
+                          //     child: Container(
+                          //       padding: EdgeInsets.all(10),
+                          //       decoration: BoxDecoration(
+                          //         color: Color(0xFF1E88E5).withOpacity(0.08),
+                          //         borderRadius: BorderRadius.circular(6),
+                          //         border: Border.all(
+                          //           color: Color(0xFF1E88E5).withOpacity(0.3),
+                          //         ),
+                          //       ),
+                          //       child: Row(
+                          //         mainAxisAlignment:
+                          //             MainAxisAlignment.spaceBetween,
+                          //         children: [
+                          //           Expanded(
+                          //             child: Column(
+                          //               crossAxisAlignment:
+                          //                   CrossAxisAlignment.start,
+                          //               children: [
+                          //                 Text(
+                          //                   '✓ Member Terpilih',
+                          //                   style: TextStyle(
+                          //                     fontSize: 10,
+                          //                     fontWeight: FontWeight.w600,
+                          //                     color: Color(0xFF1E88E5),
+                          //                   ),
+                          //                 ),
+                          //                 if (_memberDiscount > 0)
+                          //                   Padding(
+                          //                     padding: EdgeInsets.only(top: 4),
+                          //                     child: Text(
+                          //                       'Diskon: ${_memberDiscount.toStringAsFixed(1)}%',
+                          //                       style: TextStyle(
+                          //                         fontSize: 9,
+                          //                         color: Colors.grey[700],
+                          //                       ),
+                          //                     ),
+                          //                   ),
+                          //               ],
+                          //             ),
+                          //           ),
+                          //           GestureDetector(
+                          //             onTap: () {
+                          //               setState(() {
+                          //                 _selectedMember = null;
+                          //                 _memberDiscount = 0;
+                          //                 _customerNameController.clear();
+                          //                 widget.onCustomerNameChanged(null);
+                          //                 widget.onDiscountChanged(0);
+                          //               });
+                          //             },
+                          //             child: Icon(
+                          //               Icons.close,
+                          //               size: 16,
+                          //               color: Color(0xFF1E88E5),
+                          //             ),
+                          //           ),
+                          //         ],
+                          //       ),
+                          //     ),
+                          //   ),
                         ],
                       ),
                       SizedBox(height: 12),

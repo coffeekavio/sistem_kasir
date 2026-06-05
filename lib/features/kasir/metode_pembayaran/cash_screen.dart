@@ -9,6 +9,7 @@ class CashScreen extends StatefulWidget {
   final double? discount;
   final int? tax;
   final int? finalTotal;
+  final String? memberId;
   final int memberPointsRedeemed;
   final Map<String, dynamic>? selectedVoucher;
 
@@ -20,6 +21,7 @@ class CashScreen extends StatefulWidget {
     this.discount,
     this.tax,
     this.finalTotal,
+    this.memberId,
     this.memberPointsRedeemed = 0,
     this.selectedVoucher,
   });
@@ -101,7 +103,7 @@ class _CashScreenState extends State<CashScreen> {
       final response = await TransactionService.createTransaction(
         cart: widget.items ?? [],
         totalAmount: widget.finalTotal ?? 0,
-        memberId: null,
+        memberId: widget.memberId,
         voucherId: widget.selectedVoucher?['id'],
         discountAmount: 0,
         voucherDiscountAmount: 0,
