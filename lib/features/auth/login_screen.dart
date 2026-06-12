@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kasir/services/auth_service.dart';
 import 'package:kasir/services/api.dart';
+import 'package:kasir/core/components/alert_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,7 +14,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  String? _errorText;
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -23,15 +23,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // Validasi input
     if (username.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorText = 'Username dan password tidak boleh kosong!';
-      });
+      AlertDialogHelper.showError(
+        context: context,
+        title: 'Data Tidak Lengkap',
+        desc: 'Silakan isi username dan password terlebih dahulu.',
+      );
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _errorText = null;
     });
 
     try {
@@ -42,19 +43,64 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        // Aplikasi hanya untuk kasir — selalu arahkan ke menu
-        Navigator.of(context).pushReplacementNamed('/menu');
+        // Alert sukses
+        AlertDialogHelper.showSuccess(
+          context: context,
+          title: 'Login Berhasil!',
+          desc: 'Selamat datang $username, sistem sedang memuat...',
+          onOkPress: () {
+            // Aplikasi hanya untuk kasir — selalu arahkan ke menu
+            Navigator.of(context).pushReplacementNamed('/menu');
+          },
+        );
       }
     } on ApiException catch (e) {
       setState(() {
-        _errorText = e.message;
         _isLoading = false;
       });
+
+      if (mounted) {
+        // Cek tipe error
+        if (e.message.toLowerCase().contains('connect') ||
+            e.message.toLowerCase().contains('timeout') ||
+            e.message.toLowerCase().contains('refused')) {
+          // Error koneksi
+          AlertDialogHelper.showError(
+            context: context,
+            title: 'Koneksi Terputus',
+            desc:
+                'Periksa koneksi internet Anda. Pastikan WiFi atau data seluler aktif dan coba lagi.',
+          );
+        } else if (e.message.toLowerCase().contains('401') ||
+            e.message.toLowerCase().contains('unauthorized')) {
+          // Username atau password salah
+          AlertDialogHelper.showError(
+            context: context,
+            title: 'Login Gagal',
+            desc: 'Username atau password yang Anda masukkan salah.',
+          );
+        } else {
+          // Error umum
+          AlertDialogHelper.showError(
+            context: context,
+            title: 'Terjadi Kesalahan Jaringan',
+            desc: 'Silakan coba lagi.',
+          );
+        }
+      }
     } catch (e) {
       setState(() {
-        _errorText = 'Terjadi kesalahan: $e';
         _isLoading = false;
       });
+
+      if (mounted) {
+        AlertDialogHelper.showError(
+          context: context,
+          title: 'Kesalahan Sistem',
+          desc:
+              'Terjadi kesalahan yang tidak terduga. Silakan restart aplikasi.',
+        );
+      }
     }
   }
 
@@ -141,18 +187,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: Colors.grey[500],
                               ),
                             ),
-                            // Error message (kecil di dalam card)
-                            if (_errorText != null) ...[
-                              SizedBox(height: 12),
-                              Text(
-                                _errorText!,
-                                style: TextStyle(
-                                  color: Colors.red[600],
-                                  fontSize: 11,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
                             SizedBox(height: 32),
                             // Username
                             TextField(

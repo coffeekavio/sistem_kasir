@@ -759,55 +759,6 @@ class _IndexMenuScreenState extends State<IndexMenuScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    SizedBox(width: 12),
-                    // Kategori
-                    SizedBox(
-                      width: 32, // Lebar container
-                      height: 32, // Tinggi container
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.blue[200]!,
-                            width: 1,
-                          ),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.edit, size: 16),
-                          color: Colors.blue[600],
-                          onPressed: () => _editMenu(menu),
-                          constraints: BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          padding: EdgeInsets.zero,
-                          tooltip: 'Edit Menu',
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 32, // Lebar container
-                      height: 32, // Tinggi container
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.red[200]!, width: 1),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.delete, size: 16),
-                          color: Colors.red[600],
-                          onPressed: () => _deleteMenu(menu),
-                          constraints: BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          padding: EdgeInsets.zero,
-                          tooltip: 'Hapus Menu',
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),

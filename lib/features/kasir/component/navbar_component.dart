@@ -5,14 +5,12 @@ class NavbarComponent extends StatefulWidget {
   final VoidCallback? onMenuPressed;
   final VoidCallback? onMemberPressed;
   final VoidCallback? onDashboardPressed;
-  final VoidCallback? onLogoutPressed;
 
   const NavbarComponent({
     super.key,
     this.onMenuPressed,
     this.onMemberPressed,
     this.onDashboardPressed,
-    this.onLogoutPressed,
   });
 
   @override
@@ -141,30 +139,6 @@ class _NavbarComponentState extends State<NavbarComponent> {
                 ],
               ),
               SizedBox(width: 8),
-              PopupMenuButton<String>(
-                child: CircleAvatar(
-                  backgroundColor: Color(0xFF1E88E5),
-                  child: Icon(Icons.person, color: Colors.white),
-                ),
-                onSelected: (value) {
-                  if (value == 'logout') {
-                    widget.onLogoutPressed?.call();
-                  }
-                },
-                itemBuilder:
-                    (BuildContext context) => <PopupMenuEntry<String>>[
-                      PopupMenuItem<String>(
-                        value: 'logout',
-                        child: Row(
-                          children: [
-                            Icon(Icons.logout, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Logout'),
-                          ],
-                        ),
-                      ),
-                    ],
-              ),
             ],
           ),
         ],

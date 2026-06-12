@@ -11,6 +11,7 @@ import 'package:kasir/features/kasir/category/index_category.dart';
 import 'package:kasir/providers/kategori_provider.dart';
 import 'package:kasir/providers/menu_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();

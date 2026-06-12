@@ -151,7 +151,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> with RouteAware {
     if (dateText != null && dateText.trim().isNotEmpty) {
       final parsedDate = DateTime.tryParse(dateText);
       if (parsedDate != null) {
-        return parsedDate;
+        return parsedDate.toLocal();
       }
     }
 
