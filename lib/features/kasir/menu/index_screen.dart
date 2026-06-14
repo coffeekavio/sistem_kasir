@@ -99,17 +99,16 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Future<void> _loadMenus() async {
     try {
-      context.read<MenuProvider>().initData();
-      context.read<KategoriProvider>().initData();
+      final menuProvider = context.read<MenuProvider>();
+      final kategoriProvider = context.read<KategoriProvider>();
+
+      menuProvider.initData();
+      kategoriProvider.initData();
+
       PollingService.start(
-        onMenuSync: () {
-          context.read<MenuProvider>().fetchMenusFromApi(showLoading: false);
-        },
-        onCategorySync: () {
-          context.read<KategoriProvider>().fetchCategoriesFromApi(
-            showLoading: false,
-          );
-        },
+        onMenuSync: () => menuProvider.fetchMenusFromApi(showLoading: false),
+        onCategorySync:
+            () => kategoriProvider.fetchCategoriesFromApi(showLoading: false),
       );
     } catch (e) {
       print('Error loading menus: $e');
@@ -246,13 +245,17 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Future<void> _handleLogout() async {
+    Navigator.of(context).pop();
     try {
       PollingService.stop();
       await AuthService.logout();
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));

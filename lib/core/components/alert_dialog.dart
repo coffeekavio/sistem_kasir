@@ -12,6 +12,10 @@ class AlertDialogHelper {
     Alert(
       context: context,
       type: AlertType.success,
+      style: AlertStyle(
+        overlayColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.95),
+      ),
       title: title,
       desc: desc,
       buttons: [
@@ -23,7 +27,7 @@ class AlertDialogHelper {
             "TUTUP",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -42,6 +46,10 @@ class AlertDialogHelper {
     Alert(
       context: context,
       type: AlertType.error,
+      style: AlertStyle(
+        overlayColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.95),
+      ),
       title: title,
       desc: desc,
       buttons: [
@@ -53,7 +61,7 @@ class AlertDialogHelper {
             "TUTUP",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -72,6 +80,10 @@ class AlertDialogHelper {
     Alert(
       context: context,
       type: AlertType.warning,
+      style: AlertStyle(
+        overlayColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.95),
+      ),
       title: title,
       desc: desc,
       buttons: [
@@ -83,7 +95,7 @@ class AlertDialogHelper {
             "TUTUP",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -102,6 +114,10 @@ class AlertDialogHelper {
     Alert(
       context: context,
       type: AlertType.info,
+      style: AlertStyle(
+        overlayColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.95),
+      ),
       title: title,
       desc: desc,
       buttons: [
@@ -113,7 +129,7 @@ class AlertDialogHelper {
             "TUTUP",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -133,6 +149,10 @@ class AlertDialogHelper {
     Alert(
       context: context,
       type: AlertType.warning,
+      style: AlertStyle(
+        overlayColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.95),
+      ),
       title: title,
       desc: desc,
       buttons: [
@@ -144,7 +164,7 @@ class AlertDialogHelper {
             "YA",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -157,7 +177,7 @@ class AlertDialogHelper {
             "TIDAK",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:kasir/services/auth_service.dart';
 import 'package:kasir/services/menu_service.dart';
 import 'package:kasir/services/transaction_service.dart';
 import 'package:kasir/main.dart';
+import 'package:kasir/services/polling_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TransaksiScreen extends StatefulWidget {
@@ -443,12 +444,17 @@ class _TransaksiScreenState extends State<TransaksiScreen> with RouteAware {
   }
 
   Future<void> _handleLogout() async {
+    Navigator.of(context).pop();
     try {
+      PollingService.stop();
       await AuthService.logout();
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));

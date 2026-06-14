@@ -8,6 +8,7 @@ import 'package:kasir/features/kasir/member/models/member_constants.dart';
 import 'package:kasir/features/kasir/member/dialogs/member_dialogs.dart';
 import 'package:kasir/features/kasir/member/widgets/member_data_source.dart';
 import 'package:kasir/features/kasir/member/helpers/member_operation_helper.dart';
+import 'package:kasir/services/polling_service.dart';
 
 class IndexMemberScreen extends StatefulWidget {
   const IndexMemberScreen({super.key});
@@ -78,19 +79,20 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
   }
 
   Future<void> _handleLogout() async {
+    Navigator.of(context).pop();
     try {
+      PollingService.stop();
       await AuthService.logout();
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     } catch (e) {
-      if (mounted) {
-        MemberOperationHelper.showSnackBar(
-          context: context,
-          message: 'Logout gagal: $e',
-          isSuccess: false,
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Logout gagal: $e')));
     }
   }
 
@@ -178,9 +180,7 @@ class _IndexMemberScreenState extends State<IndexMemberScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: SidebarComponent(
-        onLogoutPressed: _handleLogout,
-      ),
+      drawer: SidebarComponent(onLogoutPressed: _handleLogout),
       body: Column(
         children: [
           // Navbar

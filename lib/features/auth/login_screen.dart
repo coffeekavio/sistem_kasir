@@ -42,53 +42,51 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
 
-      if (mounted) {
-        // Alert sukses
-        AlertDialogHelper.showSuccess(
-          context: context,
-          title: 'Login Berhasil!',
-          desc: 'Selamat datang $username, sistem sedang memuat...',
-          onOkPress: () {
-            // Aplikasi hanya untuk kasir — selalu arahkan ke menu
-            Navigator.of(context).pushReplacementNamed('/menu');
-          },
-        );
-      }
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacementNamed('/menu');
     } on ApiException catch (e) {
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
       });
 
       if (mounted) {
-        // Cek tipe error
-        if (e.message.toLowerCase().contains('connect') ||
-            e.message.toLowerCase().contains('timeout') ||
-            e.message.toLowerCase().contains('refused')) {
-          // Error koneksi
+        final message = e.message.toLowerCase();
+
+        if (message.contains('connect') ||
+            message.contains('timeout') ||
+            message.contains('refused') ||
+            message.contains('socket') ||
+            message.contains('unable to')) {
           AlertDialogHelper.showError(
             context: context,
             title: 'Koneksi Terputus',
             desc:
                 'Periksa koneksi internet Anda. Pastikan WiFi atau data seluler aktif dan coba lagi.',
           );
-        } else if (e.message.toLowerCase().contains('401') ||
-            e.message.toLowerCase().contains('unauthorized')) {
-          // Username atau password salah
+        } else if (message.contains('401') ||
+            message.contains('unauthorized') ||
+            message.contains('username atau password salah') ||
+            message.contains('invalid credentials') ||
+            message.contains('salah')) {
           AlertDialogHelper.showError(
             context: context,
             title: 'Login Gagal',
             desc: 'Username atau password yang Anda masukkan salah.',
           );
         } else {
-          // Error umum
           AlertDialogHelper.showError(
             context: context,
-            title: 'Terjadi Kesalahan Jaringan',
-            desc: 'Silakan coba lagi.',
+            title: 'Login Gagal',
+            desc: e.message,
           );
         }
       }
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
       });
@@ -338,5 +336,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }

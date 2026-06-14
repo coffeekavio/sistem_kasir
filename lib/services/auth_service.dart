@@ -42,7 +42,27 @@ class AuthService {
         'password': password,
       });
 
-      if (response['status'] != 'success' || response['user'] == null) {
+      if (response['status'] != 'success') {
+        final serverMessage =
+            response['message'] ??
+            response['error'] ??
+            'Login gagal. Periksa username dan password Anda.';
+        final lowerMessage = serverMessage.toString().toLowerCase();
+
+        if (lowerMessage.contains('unauthorized') ||
+            lowerMessage.contains('401') ||
+            lowerMessage.contains('invalid credentials') ||
+            lowerMessage.contains('username atau password') ||
+            lowerMessage.contains('salah')) {
+          throw ApiException(
+            'Username atau password salah. Silakan coba lagi.',
+          );
+        }
+
+        throw ApiException(serverMessage.toString());
+      }
+
+      if (response['user'] == null) {
         throw ApiException('Respons data dari server tidak valid.');
       }
 
@@ -71,6 +91,8 @@ class AuthService {
       }
 
       return AuthUser.fromJson(user);
+    } on ApiException {
+      rethrow;
     } catch (e) {
       throw ApiException('Login gagal: $e');
     }
